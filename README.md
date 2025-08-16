@@ -12,7 +12,7 @@ A tool to calculate daily investment amounts based on the **Asymmetric Volatilit
 
 - **Core Calculation Engine**: Implements the AAVC algorithm.
 - **Command-Line Interface (CLI)**: Provides a 'calc' subcommand to calculate daily investment amounts.
-- **Automatic Data Acquisition**: Fetches the latest stock/fund data automatically.
+- **Automatic Data Acquisition**: Fetches the latest stock/fund data automatically using yfinance.
 - **Configuration Management**: Manage your portfolio and parameters via a simple configuration file.
 - **Backtesting (Planned)**: Simulate and evaluate the strategy's performance on historical data.
 
@@ -52,7 +52,7 @@ python -m AAVC_calculate_tool calc --config config.yaml
 
 ### AAVCアルゴリズムとは？
 
-AAVCは、**非対称ボラティリティ調整型ドルコスト平均法（Asymmetric Volatility-Adjusted Cost Average)** の略称です。これは、従来のドルコスト平均法をさらに進化させた投資アルゴリズムです。
+AAVCは、**非対称ボラティリティ調整型ドルコスト平均法(Asymmetric Volatility-Adjusted Cost Average)** の略称です。これは、従来のドルコスト平均平均法をさらに進化させた投資アルゴリズムです。
 
 従来のドルコスト平均法は、株価の変動に関わらず**常に一定額**を投資します。これにより、株価が高いときには少ない株数を、低いときには多い株数を購入し、平均購入価格を平準化する効果があります。
 

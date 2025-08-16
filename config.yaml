@@ -1,0 +1,12 @@
+# config.yaml
+
+# 全体に適用するデフォルト設定
+default_settings:
+  base_amount: 10000
+  asymmetric_coefficient: 2.0
+
+# 銘柄ごとの設定
+stocks:
+  - ticker: "SPY" # S&P 500 ETF
+    base_amount: 2000 # 個別設定で上書き
+    # reference_price: (omitted, will use oldest price from history)
