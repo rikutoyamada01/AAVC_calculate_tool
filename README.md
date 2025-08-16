@@ -79,6 +79,32 @@ AAVCアルゴリズムは、ただ機械的に買い続けるのではなく、*
 
 </details>
 
+## Dependencies
+
+This project relies on the following Python libraries:
+
+### Core Dependencies
+
+These are required to run the main functionalities of the tool:
+
+-   `numpy`: For numerical operations, especially in the AAVC calculation.
+-   `yfinance`: To fetch historical stock and fund data from Yahoo Finance.
+-   `PyYAML`: To parse and load configuration files in YAML format.
+
+### Development Dependencies
+
+These are required for development, testing, and maintaining code quality:
+
+-   `black`: Code formatter.
+-   `ruff`: Linter for code style and quality checks.
+-   `mypy`: Static type checker.
+-   `isort`: For sorting import statements.
+-   `pytest`: Testing framework.
+-   `matplotlib`: For generating plots and charts in backtesting results.
+
+You can install all core dependencies using `pip install -r requirements.txt`.
+To install all development dependencies (including core dependencies), use `pip install .[dev]` from the project root.
+
 ## Contributing
 
 Contributions are welcome! Please read the [CONTRIBUTING.md](CONTRIBUTING.md) file for details on our coding standards and how to get started.

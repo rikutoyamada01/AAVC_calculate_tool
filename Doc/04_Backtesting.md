@@ -10,11 +10,21 @@
 - 比較対象として、同期間のドルコスト平均法やBuy & Hold戦略のパフォーマンスも算出する機能。
 
 ## 4.3. コマンド仕様（案）
+
+### 単一銘柄のバックテスト
 ```bash
-python -m AAVC_calculate_tool backtest --ticker <TICKER_SYMBOL> --start-date <YYYY-MM-DD> --end-date <YYYY-MM-DD>
+python -m AAVC_calculate_tool backtest --ticker <TICKER_SYMBOL> --start-date <YYYY-MM-DD> --end-date <YYYY-MM-DD> [options]
 ```
 - `--ticker`: 必須。
 - `--start-date`, `--end-date`: 必須。バックテストの対象期間。
+- `[options]`: `--amount`, `--ref-price` などのパラメータを任意で指定。
+
+### 設定ファイルに基づく一括バックテスト
+```bash
+python -m AAVC_calculate_tool backtest --config <PATH_TO_CONFIG> --start-date <YYYY-MM-DD> --end-date <YYYY-MM-DD>
+```
+- `--config`: 必須。`config.yaml`など設定ファイルのパスを指定する。
+- `--start-date`, `--end-date`: 必須。設定ファイル内の全銘柄に適用する共通のバックテスト期間。
 
 ## 4.4. パフォーマンス指標（案）
 - **最終資産評価額** (Final Portfolio Value)
