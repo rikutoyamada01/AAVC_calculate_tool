@@ -50,19 +50,3 @@ def calculate_aavc_investment(price_path: list, base_amount: float, reference_pr
         return base_amount * 3
         
     return float(calculated_amount)
-
-# --- 実行例 ---
-# 過去の株価推移を想定
-historical_prices = [1000, 990, 985, 995, 970]
-
-# 基準価格を設定（例: 最初の価格を基準とする）
-initial_price = historical_prices[0]
-
-# その日の投資額を計算
-investment_today = calculate_aavc_investment(
-    price_path=historical_prices,
-    base_amount=100,
-    reference_price=initial_price
-)
-
-print(f"本日の投資額: ¥{investment_today:,.0f}")

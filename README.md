@@ -11,7 +11,7 @@ A tool to calculate daily investment amounts based on the **Asymmetric Volatilit
 ## Features
 
 - **Core Calculation Engine**: Implements the AAVC algorithm.
-- **Command-Line Interface (CLI)**: Easily calculate investment amounts from your terminal.
+- **Command-Line Interface (CLI)**: Provides a 'calc' subcommand to calculate daily investment amounts.
 - **Automatic Data Acquisition**: Fetches the latest stock/fund data automatically.
 - **Configuration Management**: Manage your portfolio and parameters via a simple configuration file.
 - **Backtesting (Planned)**: Simulate and evaluate the strategy's performance on historical data.
@@ -39,14 +39,13 @@ You can run the tool directly from the command line.
 
 **Calculate for a single stock:**
 ```bash
-python -m AAVC_calculate_tool.main --ticker "AAPL" --amount 10000
+python -m AAVC_calculate_tool calc --ticker "AAPL" --amount 10000
 ```
 
 **Calculate for all stocks in your config file:**
 ```bash
-python -m AAVC_calculate_tool.main --config config.yaml
+python -m AAVC_calculate_tool calc --config config.yaml
 ```
-*(Note: The CLI is currently under development as per the specifications in the `Doc/` directory.)*
 
 <details>
 <summary><b>AAVCアルゴリズムの詳細 (Click to expand)</b></summary>
