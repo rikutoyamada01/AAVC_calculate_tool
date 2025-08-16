@@ -13,39 +13,157 @@ A tool to calculate daily investment amounts based on the **Asymmetric Volatilit
 - **Core Calculation Engine**: Implements the AAVC algorithm.
 - **Command-Line Interface (CLI)**: Provides a 'calc' subcommand to calculate daily investment amounts.
 - **Automatic Data Acquisition**: Fetches the latest stock/fund data automatically using yfinance.
-- **Configuration Management**: Manage your portfolio and parameters via a simple configuration file.
+- **Configuration Management**: Manages your portfolio and parameters via a simple YAML configuration file.
 - **Backtesting (Planned)**: Simulate and evaluate the strategy's performance on historical data.
 
 ## Installation
 
-1.  Clone the repository:
-    ```bash
-    git clone <repository_url>
-    cd AAVC_calculate_tool
-    ```
+### Prerequisites
 
-2.  Install the required dependencies. It is recommended to use a virtual environment.
-    ```bash
-    # Using requirements.txt
-    pip install -r requirements.txt
+- Python 3.8 or higher
+- pip (Python package installer)
 
-    # Or, to install with development tools
-    pip install .[dev]
-    ```
+### Step 1: Clone the Repository
+
+```bash
+git clone <repository_url>
+cd AAVC_calculate_tool
+```
+
+### Step 2: Set Up Virtual Environment (Recommended)
+
+```bash
+# Create virtual environment
+python -m venv venv
+
+# Activate virtual environment
+# On Windows:
+venv\Scripts\activate
+# On macOS/Linux:
+source venv/bin/activate
+```
+
+### Step 3: Install Dependencies
+
+```bash
+# Install in development mode (recommended for development)
+pip install -e .
+
+# Or install with development tools
+pip install .[dev]
+
+# Alternative: Install from requirements.txt
+pip install -r requirements.txt
+```
+
+### Step 4: Verify Installation
+
+```bash
+# Check if the tool is working
+python -m AAVC_calculate_tool --help
+```
 
 ## Usage
 
-You can run the tool directly from the command line.
+### Basic Commands
 
-**Calculate for a single stock:**
+The tool provides a command-line interface with the following subcommands:
+
+```bash
+python -m AAVC_calculate_tool [subcommand] [options]
+```
+
+Available subcommands:
+- `calc`: Calculate investment amounts
+- `backtest`: Run backtesting (planned feature)
+
+### Calculate Investment Amounts
+
+#### Single Stock Calculation
+
+Calculate the investment amount for a single stock:
+
 ```bash
 python -m AAVC_calculate_tool calc --ticker "AAPL" --amount 10000
 ```
 
-**Calculate for all stocks in your config file:**
+**Options:**
+- `--ticker, -t`: Stock ticker symbol (e.g., AAPL, SPY, 7203.T)
+- `--amount, -a`: Base investment amount (required)
+- `--ref-price, -r`: Reference price (optional, uses oldest historical price if not specified)
+- `--log-file`: Custom log file path (optional, defaults to `investment_log.csv`)
+
+**Examples:**
+```bash
+# Basic calculation
+python -m AAVC_calculate_tool calc --ticker "AAPL" --amount 10000
+
+# With custom reference price
+python -m AAVC_calculate_tool calc --ticker "SPY" --amount 5000 --ref-price 400.0
+
+# With custom log file
+python -m AAVC_calculate_tool calc --ticker "AAPL" --amount 10000 --log-file my_portfolio.csv
+```
+
+#### Batch Calculation from Configuration File
+
+Calculate investment amounts for multiple stocks defined in a configuration file:
+
 ```bash
 python -m AAVC_calculate_tool calc --config config.yaml
 ```
+
+**Options:**
+- `--config, -c`: Path to YAML configuration file (required)
+- `--log-file`: Custom log file path (optional, defaults to `investment_log.csv`)
+
+**Example:**
+```bash
+python -m AAVC_calculate_tool calc --config my_portfolio.yaml --log-file portfolio_log.csv
+```
+
+### Configuration File (config.yaml)
+
+The tool can process multiple investment jobs defined in a YAML configuration file (e.g., `config.yaml`). This file allows you to define global settings and specific parameters for each ticker.
+
+**Example `config.yaml` structure:**
+
+```yaml
+# 全体に適用するデフォルト設定
+default_settings:
+  base_amount: 10000
+  asymmetric_coefficient: 2.0 # Optional: Defaults to 2.0 if not specified.
+
+# 銘柄ごとの設定
+stocks:
+  - ticker: "SPY" # Ticker symbol (required)
+    base_amount: 2000 # Optional: Overrides default_settings.base_amount for this ticker.
+    # reference_price: (Optional: If omitted, uses the oldest price from history)
+    # asymmetric_coefficient: (Optional: Overrides default_settings.asymmetric_coefficient for this ticker)
+```
+
+**Key parameters:**
+
+-   `default_settings`:
+    -   `base_amount`: (Required) The default base investment amount for all stocks.
+    -   `asymmetric_coefficient`: (Optional) The asymmetric coefficient used in the AAVC calculation. **Defaults to `2.0` if not specified.**
+-   `stocks`: A list of individual stock configurations. Each item can have:
+    -   `ticker`: (Required) The ticker symbol for the asset.
+    -   `base_amount`: (Optional) Overrides the `default_settings.base_amount` for this specific ticker.
+    -   `reference_price`: (Optional) The reference price for the calculation. If omitted, the oldest price from the fetched history will be used.
+    -   `asymmetric_coefficient`: (Optional) Overrides the `default_settings.asymmetric_coefficient` for this specific ticker.
+
+### Investment Logging
+
+The tool can automatically log each investment calculation to a CSV file. By default, the log is saved to `investment_log.csv` in the current directory.
+
+You can specify a different log file path using the `--log-file` argument:
+
+```bash
+python -m AAVC_calculate_tool calc --ticker "AAPL" --amount 10000 --log-file my_custom_log.csv
+```
+
+The log file will contain the following columns: `date`, `ticker`, `base_amount`, `reference_price`, and `calculated_investment`. If the file does not exist, a header row will be added automatically.
 
 <details>
 <summary><b>AAVCアルゴリズムの詳細 (Click to expand)</b></summary>
@@ -77,6 +195,117 @@ AAVCは、以下の3つの要素を組み合わせて投資額を調整します
 AAVCアルゴリズムは、ただ機械的に買い続けるのではなく、**株価の下落時に強く、上昇時には控えめに投資額を調整する**ことで、より効率的な資産形成を目指すための戦略です。特に、長期的な下落局面で効果を発揮するように設計されています。
 
 </details>
+
+## Documentation
+
+The AAVC Calculate Tool provides comprehensive documentation to help users and developers get the most out of the tool.
+
+### 📚 Documentation Structure
+
+#### 🚀 Getting Started
+- **[Quick Start Guide](Doc/Quick_Start_Guide.md)** - Get up and running in minutes
+- **[README](README.md)** - Main project overview and user guide (this file)
+
+#### 📋 Specifications
+- **[CLI Specification](Doc/01_CLI_Specification.md)** - Command-line interface overview
+- **[Data Acquisition](Doc/02_Data_Acquisition.md)** - Data fetching and validation
+- **[Configuration and Logging](Doc/03_Configuration_and_Logging.md)** - Settings and logging
+- **[Backtesting](Doc/04_Backtesting.md)** - Strategy testing (planned feature)
+- **[Backtest Comparison](Doc/05_Backtest_Comparison.md)** - Performance analysis (planned feature)
+
+#### 🔧 Technical Details
+- **[CLI Detailed Design](Doc/01_CLI_Detailed_Design.md)** - CLI implementation details
+- **[Data Acquisition Detailed Design](Doc/02_Data_Acquisition_Detailed_Design.md)** - Data handling architecture
+- **[Configuration and Logging Detailed Design](Doc/03_Configuration_and_Logging_Detailed_Design.md)** - Configuration system design
+- **[Backtesting Detailed Design](Doc/04_Backtesting_Detailed_Design.md)** - Backtesting implementation (planned)
+- **[Backtest Comparison Detailed Design](Doc/05_Backtest_Comparison_Detailed_Design.md)** - Comparison system design (planned)
+
+#### 👨‍💻 Developer Resources
+- **[Developer Guide](Doc/Developer_Guide.md)** - Comprehensive development information
+- **[API Reference](Doc/API_Reference.md)** - Complete API documentation
+
+### 🎯 Choose Your Path
+
+#### For New Users
+1. Start with the **[Quick Start Guide](Doc/Quick_Start_Guide.md)**
+2. Read this **[README](README.md)** for comprehensive information
+3. Refer to **[Configuration and Logging](Doc/03_Configuration_and_Logging.md)** for setup details
+
+#### For Regular Users
+1. Use **[CLI Specification](Doc/01_CLI_Specification.md)** for command reference
+2. Check **[Data Acquisition](Doc/02_Data_Acquisition.md)** for supported tickers
+3. Review **[Configuration and Logging](Doc/03_Configuration_and_Logging.md)** for advanced features
+
+#### For Developers
+1. Begin with **[Developer Guide](Doc/Developer_Guide.md)** for setup and architecture
+2. Use **[API Reference](Doc/API_Reference.md)** for detailed function documentation
+3. Review detailed design documents for implementation insights
+
+### 📖 Complete Documentation Index
+
+For a complete overview of all available documentation, see the **[Documentation Index](Doc/Documentation_Index.md)**.
+
+## Troubleshooting
+
+### Common Issues
+
+#### 1. Module Not Found Error
+
+**Error:**
+```
+ModuleNotFoundError: No module named 'AAVC_calculate_tool.recorder'
+```
+
+**Solution:**
+Install the package in development mode:
+```bash
+pip install -e .
+```
+
+#### 2. Unrecognized Arguments Error
+
+**Error:**
+```
+__main__.py: error: unrecognized arguments: --log-file my_custom_log.csv
+```
+
+**Solution:**
+Ensure the package is properly installed and you're using the correct command syntax.
+
+#### 3. Data Fetching Issues
+
+**Error:**
+```
+Error: No historical data found for [TICKER]
+```
+
+**Solution:**
+- Verify the ticker symbol is correct
+- Check your internet connection
+- Some tickers may not be available on Yahoo Finance
+
+#### 4. Configuration File Errors
+
+**Error:**
+```
+Error: Could not parse configuration file
+```
+
+**Solution:**
+- Verify YAML syntax is correct
+- Check that required fields are present
+- Ensure file encoding is UTF-8
+
+### Getting Help
+
+If you encounter issues not covered here:
+
+1. Check the [GitHub Issues](https://github.com/your-repo/AAVC_calculate_tool/issues) page
+2. Create a new issue with:
+   - Error message
+   - Command used
+   - Python version
+   - Operating system
 
 ## Dependencies
 

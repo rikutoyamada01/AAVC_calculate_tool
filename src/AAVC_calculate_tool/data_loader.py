@@ -1,7 +1,8 @@
-import yfinance as yf
 from functools import lru_cache
 from typing import List
-import datetime
+
+import yfinance as yf
+
 
 # Custom exceptions (as per detailed design)
 class DataFetchError(Exception):
