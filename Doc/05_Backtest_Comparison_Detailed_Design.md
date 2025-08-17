@@ -3,11 +3,16 @@
 このドキュメントは `05_Backtest_Comparison.md` を基に、バックテスト自動比較機能の実装に必要な詳細設計を定義する。
 (レビュー結果に基づき、保守性向上のため設計をリファクタリング)
 
-## 1. モジュールとファイル構造 (変更なし)
+## 1. モジュールとファイル構造
 
+### 1.1. 新規作成モジュール
 - **`AAVC_calculate_tool/backtester.py`**: コアなバックテストエンジンと各戦略ロジックを配置。
 - **`AAVC_calculate_tool/plotter.py`**: チャート描画ロジック。
 - **`AAVC_calculate_tool/display.py`**: コンソール表示ロジック。
+
+### 1.2. 拡張モジュール
+- **`AAVC_calculate_tool/data_loader.py`**: 日付範囲指定による価格データ取得機能を追加
+- **`AAVC_calculate_tool/__main__.py`**: `backtest` サブコマンドの実装
 
 ## 2. データ構造（型定義）の拡張と明確化
 
@@ -112,9 +117,28 @@ def run_comparison_backtest(params: BacktestParams) -> dict[str, BacktestResult]
 
 `backtest` サブコマンドの処理フローを、新しいインターフェースに合わせて修正する。
 
-1.  引数をパースし、`BacktestParams` オブジェクトを作成する。
-2.  `backtester.run_comparison_backtest(params)` を呼び出し、`results` を取得する。
-3.  `display.generate_summary_table(results)` を呼び出し、整形されたテーブルを `print` する。
-4.  `--plot` フラグが指定されている場合:
-    a. `plotter.plot_comparison_chart(results, output_path=...)` を呼び出してチャートを保存する。
-    b. `print(f"Chart saved to {os.path.abspath(output_path)}")` のように、保存したチャートの**絶対パス**をユーザーに通知する。
+### 5.1. 引数パース処理
+1. 必須引数の検証（`--ticker`, `--start-date`, `--end-date`, `--amount`）
+2. オプション引数の設定（デフォルト値の適用）
+3. `BacktestParams` オブジェクトの作成
+
+### 5.2. データ取得処理
+1. `fetch_price_history_by_date()` による指定期間の価格データ取得
+2. 日付文字列から `date` オブジェクトへの変換
+
+### 5.3. バックテスト実行
+1. `backtester.run_comparison_backtest(params)` の呼び出し
+2. 3つの戦略（AAVC、DCA、Buy & Hold）の並行実行
+
+### 5.4. 結果表示処理
+1. `display.generate_summary_table(results)` によるサマリーテーブル生成
+2. コンソールへの出力
+
+### 5.5. チャート生成処理（`--plot` 指定時）
+1. `plotter.plot_comparison_chart()` によるチャート生成
+2. ファイル保存と絶対パスの表示
+
+### 5.6. エラーハンドリング
+1. 各段階での適切なエラーキャッチ
+2. ユーザーフレンドリーなエラーメッセージの表示
+3. 適切な終了コードの設定

@@ -1,4 +1,5 @@
 import argparse
+import os
 import sys
 from datetime import datetime
 
@@ -16,6 +17,9 @@ from .data_loader import (
     fetch_price_history,
 )
 from .recorder import LogEntry, LogWriteError, record_investment
+from .backtester import run_comparison_backtest, BacktestParams
+from .display import generate_summary_table
+from .plotter import plot_comparison_chart
 
 
 def main():
@@ -47,14 +51,18 @@ def main():
         help="Path to the investment log CSV file (default: investment_log.csv)."
     )
 
-    # --- 'backtest' subcommand (placeholder for now) ---
+    # --- 'backtest' subcommand ---
     backtest_parser = subparsers.add_parser(
-        "backtest", help="Run a backtest for a strategy."
+        "backtest", help="Run a backtest comparison for AAVC, DCA, and Buy & Hold strategies."
     )
-    # Placeholder arguments for backtest
-    backtest_parser.add_argument("--ticker", type=str, help="Ticker symbol for backtest.")
-    backtest_parser.add_argument("--start-date", type=str, help="Start date for backtest (YYYY-MM-DD).")
-    backtest_parser.add_argument("--end-date", type=str, help="End date for backtest (YYYY-MM-DD).")
+    backtest_parser.add_argument("--ticker", "-t", type=str, required=True, help="Ticker symbol for backtest.")
+    backtest_parser.add_argument("--start-date", type=str, required=True, help="Start date for backtest (YYYY-MM-DD).")
+    backtest_parser.add_argument("--end-date", type=str, required=True, help="End date for backtest (YYYY-MM-DD).")
+    backtest_parser.add_argument("--amount", "-a", type=float, required=True, help="Base investment amount.")
+    backtest_parser.add_argument("--ref-price", type=float, help="Reference price. If not specified, uses the oldest price from history.")
+    backtest_parser.add_argument("--asymmetric-coefficient", type=float, default=1.0, help="Asymmetric coefficient for AAVC strategy (default: 1.0).")
+    backtest_parser.add_argument("--volatility-period", type=int, default=20, help="Volatility calculation period (default: 20).")
+    backtest_parser.add_argument("--plot", action="store_true", help="Generate and save comparison chart.")
 
 
     args = parser.parse_args()
@@ -62,8 +70,7 @@ def main():
     if args.command == "calc":
         handle_calc_command(args)
     elif args.command == "backtest":
-        print("Backtest command is not yet implemented.")
-        sys.exit(1)
+        handle_backtest_command(args)
     else:
         parser.print_help()
         sys.exit(1)
@@ -183,6 +190,56 @@ def print_calc_result(ticker, amount):
     print(f"Date: {today}")
     print(f"Investment Amount: JPY {amount:.0f}")
     print("--------------------------\n")
+
+
+def handle_backtest_command(args):
+    """Handle the backtest command"""
+    try:
+        # Fetch price history for the specified period
+        price_path = fetch_price_history(args.ticker)
+        if not price_path:
+            print(f"Error: No historical data found for {args.ticker}.")
+            sys.exit(1)
+        
+        # Set reference price
+        reference_price = args.ref_price if args.ref_price is not None else price_path[0]
+        
+        # Prepare backtest parameters
+        backtest_params: BacktestParams = {
+            "ticker": args.ticker,
+            "start_date": args.start_date,
+            "end_date": args.end_date,
+            "base_amount": args.amount,
+            "reference_price": reference_price,
+            "asymmetric_coefficient": args.asymmetric_coefficient,
+            "volatility_period": args.volatility_period
+        }
+        
+        # Run comparison backtest
+        results = run_comparison_backtest(backtest_params)
+        
+        # Display summary table
+        summary_table = generate_summary_table(
+            results, args.ticker, args.start_date, args.end_date
+        )
+        print(summary_table)
+        
+        # Generate chart if requested
+        if args.plot:
+            chart_path = plot_comparison_chart(
+                results, args.ticker, args.start_date, args.end_date
+            )
+            print(f"\nChart saved to: {os.path.abspath(chart_path)}")
+            
+    except TickerNotFoundError as e:
+        print(f"Error: {e}")
+        sys.exit(1)
+    except DataFetchError as e:
+        print(f"Error fetching data: {e}")
+        sys.exit(1)
+    except Exception as e:
+        print(f"Error: {e}")
+        sys.exit(1)
 
 if __name__ == "__main__":
     main()

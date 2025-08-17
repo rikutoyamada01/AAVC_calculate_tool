@@ -29,7 +29,7 @@ def test_fetch_price_history_valid_ticker(mock_yfinance_success):
     assert prices[0] == 100.0
     assert prices[-1] == 105.0
     mock_yfinance_success.Ticker.assert_called_with("AAPL")
-    mock_yfinance_success.Ticker.return_value.history.assert_called_with(period="60d")
+    mock_yfinance_success.Ticker.return_value.history.assert_called_with(period="1y")
 
 # Test fetch_price_history with invalid ticker (empty DataFrame)
 def test_fetch_price_history_invalid_ticker():

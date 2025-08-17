@@ -8,6 +8,7 @@ dependencies = [
     "numpy",
     "yfinance",
     "PyYAML",
+    "matplotlib",
 ]
 
 [project.optional-dependencies]

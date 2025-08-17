@@ -59,10 +59,58 @@ AAVC戦略の有効性を客観的に評価するため、標準的な投資戦�
 
 ## 5.5. CLIの変更点
 
-- `backtest` サブコマンドに、オプショナルなフラグ引数 `--plot` を追加する。
-  - **指定時**: チャート画像をカレントディレクトリに保存する。
-  - **非指定時**: サマリー表の表示のみ行う。
+### 5.5.1. 必須引数
+- `--ticker` / `-t`: バックテスト対象のティッカーシンボル
+- `--start-date`: バックテスト開始日 (YYYY-MM-DD形式)
+- `--end-date`: バックテスト終了日 (YYYY-MM-DD形式)
+- `--amount` / `-a`: 基準投資額
+
+### 5.5.2. オプション引数
+- `--ref-price`: 基準価格（指定しない場合、期間内の最古の価格を使用）
+- `--asymmetric-coefficient`: AAVC戦略の非対称係数（デフォルト: 1.0）
+- `--volatility-period`: ボラティリティ計算期間（デフォルト: 20）
+- `--plot`: チャート画像の生成と保存（オプション）
+
+### 5.5.3. 使用例
+```bash
+# 基本的なバックテスト
+python -m src.AAVC_calculate_tool backtest \
+  --ticker AAPL \
+  --start-date 2023-01-01 \
+  --end-date 2024-01-01 \
+  --amount 10000
+
+# チャート付きバックテスト
+python -m src.AAVC_calculate_tool backtest \
+  --ticker AAPL \
+  --start-date 2023-01-01 \
+  --end-date 2024-01-01 \
+  --amount 10000 \
+  --plot
+```
 
 ## 5.6. 依存ライブラリ
 
 - チャート描画のために、`matplotlib` ライブラリが新たに必要となる。`pyproject.toml` および `requirements.txt` に追加する。
+
+## 5.7. パフォーマンス指標の定義
+
+### 5.7.1. 収益性指標
+- **Final Value**: 最終的なポートフォリオ価値
+- **Total Return**: 総投資額に対する総収益率（%）
+- **Annual Return**: 年率収益率（%）
+
+### 5.7.2. リスク指標
+- **Max Drawdown**: 最大下落率（%）
+- **Volatility (Annual)**: 年率ボラティリティ（%）
+- **Sharpe Ratio**: シャープレシオ（リスク調整後収益率）
+
+### 5.7.3. 投資額指標
+- **Total Invested**: 期間中の総投資額
+
+## 5.8. エラーハンドリング
+
+- **TickerNotFoundError**: 指定されたティッカーが見つからない場合
+- **DataFetchError**: データ取得に失敗した場合
+- **引数検証エラー**: 必須引数が不足している場合
+- **日付形式エラー**: 日付が正しい形式でない場合

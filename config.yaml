@@ -7,6 +7,22 @@ default_settings:
 
 # 銘柄ごとの設定
 stocks:
-  - ticker: "SPY" # S&P 500 ETF
+  - ticker: "^SPX" # S&P 500
     base_amount: 2000 # 個別設定で上書き
-    # reference_price: (omitted, will use oldest price from history)
+    reference_price: 6400.0
+
+  - ticker: "^N225" # 日経平均株価
+    base_amount: 2000
+    reference_price: 29000.0
+
+  - ticker: "TSLA" # テスラ
+    base_amount: 200
+    reference_price: 330.0
+
+  - ticker: "NFLX" # ネットフリックス
+    base_amount: 200
+    reference_price: 1222.0
+
+  - ticker: "AMZN" # アマゾン
+    base_amount: 200
+    reference_price: 230.0

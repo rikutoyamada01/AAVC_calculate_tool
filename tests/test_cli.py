@@ -129,18 +129,18 @@ def test_calc_config_file_not_found(mock_dependencies, capsys_stdout):
     assert pytest_wrapped_e.value.code == 1
 
     captured = capsys_stdout.readouterr()
-    assert "Error loading configuration: Config file not found" in captured.out
+    assert "Error: Config file not found" in captured.out
 
 # --- Test 'backtest' subcommand (placeholder) ---
 
-def test_backtest_command_not_implemented(capsys_stdout):
+def test_backtest_command_missing_required_args(capsys_stdout):
     sys.argv = ["__main__.py", "backtest", "--ticker", "TEST"]
     from AAVC_calculate_tool.__main__ import main
     with pytest.raises(SystemExit) as pytest_wrapped_e:
         main()
 
     assert pytest_wrapped_e.type is SystemExit
-    assert pytest_wrapped_e.value.code == 1
+    assert pytest_wrapped_e.value.code == 2  # argparse error code
 
     captured = capsys_stdout.readouterr()
-    assert "Backtest command is not yet implemented." in captured.out
+    assert "the following arguments are required" in captured.err
