@@ -80,7 +80,7 @@ def fetch_price_history_by_date(
 
         # Extract 'Close' column and dates, convert to lists
         prices = hist['Close'].tolist()
-        dates = hist.index.strftime('%Y-%m-%d').tolist()
+        dates = hist.index.to_series().dt.strftime('%Y-%m-%d').tolist()
         
         return prices, dates
 
