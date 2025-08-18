@@ -6,261 +6,322 @@ This document provides detailed API documentation for all public functions, clas
 
 ## Module: calculator
 
-Core AAVC calculation logic implementation.
+投資アルゴリズムの基底クラスと、AAVC、DCA、Buy & Hold戦略の実装。
 
-### Functions
+### Classes
 
-#### `calculate_aavc_investment`
+#### `AAVCStrategy`
 
 ```python
-def calculate_aavc_investment(
-    price_path: List[float],
-    base_amount: float,
-    reference_price: float,
-    asymmetric_coefficient: float = 2.0
-) -> float
+class AAVCStrategy(BaseAlgorithm):
+    # ... (詳細な実装は省略)
 ```
 
-**Description**: Calculates the investment amount using the AAVC algorithm.
+**Description**: AAVC (Adaptive Asset Value Control) 戦略を実装したアルゴリズムクラス。
 
-**Parameters**:
-- `price_path` (List[float]): Historical price data as a list of floats
-- `base_amount` (float): Base investment amount in JPY
-- `reference_price` (float): Reference price for comparison
-- `asymmetric_coefficient` (float, optional): Asymmetric coefficient. Defaults to 2.0
+**Inherits from**: `BaseAlgorithm`
 
-**Returns**:
-- `float`: Calculated investment amount in JPY
+**Methods**:
+- `get_metadata() -> AlgorithmMetadata`: アルゴリズムのメタデータを返します。
+- `calculate_investment(current_price: float, price_history: List[float], date_history: List[date], parameters: Dict[str, Any]) -> float`: AAVC戦略に基づき投資額を計算します。
 
-**Raises**:
-- `ValueError`: If price_path is empty or contains invalid values
-- `ValueError`: If base_amount or reference_price is negative
+**Parameters (via `get_metadata`)**:
+- `base_amount` (float): 基準投資額。
+- `reference_price` (float): 基準価格。
+- `asymmetric_coefficient` (float): 非対称係数。
 
-**Example**:
+#### `DCAStrategy`
+
 ```python
-from AAVC_calculate_tool.calculator import calculate_aavc_investment
-
-prices = [100.0, 95.0, 90.0, 85.0]
-base_amount = 10000
-reference_price = 100.0
-
-investment = calculate_aavc_investment(
-    price_path=prices,
-    base_amount=base_amount,
-    reference_price=reference_price
-)
-print(f"Investment amount: JPY {investment:.0f}")
+class DCAStrategy(BaseAlgorithm):
+    # ... (詳細な実装は省略)
 ```
 
-**Algorithm Details**:
-1. Calculates price deviation from reference price
-2. Applies volatility adjustment based on price movements
-3. Applies asymmetric coefficient for downward price movements
-4. Returns adjusted investment amount
+**Description**: ドルコスト平均法 (DCA) 戦略を実装したアルゴリズムクラス。
+
+**Inherits from**: `BaseAlgorithm`
+
+**Methods**:
+- `get_metadata() -> AlgorithmMetadata`: アルゴリズムのメタデータを返します。
+- `calculate_investment(current_price: float, price_history: List[float], date_history: List[date], parameters: Dict[str, Any]) -> float`: DCA戦略に基づき投資額を計算します。
+
+**Parameters (via `get_metadata`)**:
+- `base_amount` (float): 毎回の投資額。
+
+#### `BuyAndHoldStrategy`
+
+```python
+class BuyAndHoldStrategy(BaseAlgorithm):
+    # ... (詳細な実装は省略)
+```
+
+**Description**: バイ・アンド・ホールド (Buy & Hold) 戦略を実装したアルゴリズムクラス。
+
+**Inherits from**: `BaseAlgorithm`
+
+**Methods**:
+- `get_metadata() -> AlgorithmMetadata`: アルゴリズムのメタデータを返します。
+- `calculate_investment(current_price: float, price_history: List[float], date_history: List[date], parameters: Dict[str, Any]) -> float`: Buy & Hold戦略に基づき投資額を計算します。
+
+**Parameters (via `get_metadata`)**:
+- `initial_amount` (float): 初回投資額。
 
 ---
 
-## Module: data_loader
+## Module: algorithm_registry
 
-Data acquisition and validation functionality.
+投資アルゴリズムの登録と管理、および共通インターフェースの定義。
 
-### Functions
+### Classes
 
-#### `fetch_price_history`
-
-```python
-def fetch_price_history(ticker: str) -> List[float]
-```
-
-**Description**: Fetches historical price data for a given ticker symbol.
-
-**Parameters**:
-- `ticker` (str): Stock ticker symbol (e.g., "AAPL", "SPY", "7203.T")
-
-**Returns**:
-- `List[float]`: List of historical closing prices in chronological order (oldest first)
-
-**Raises**:
-- `TickerNotFoundError`: If the ticker symbol is not found
-- `DataFetchError`: If there's an error fetching data from Yahoo Finance
-
-**Example**:
-```python
-from AAVC_calculate_tool.data_loader import fetch_price_history
-
-try:
-    prices = fetch_price_history("AAPL")
-    print(f"Retrieved {len(prices)} price points for AAPL")
-    print(f"Oldest price: {prices[0]}")
-    print(f"Latest price: {prices[-1]}")
-except TickerNotFoundError:
-    print("Ticker not found")
-except DataFetchError as e:
-    print(f"Error fetching data: {e}")
-```
-
-**Data Source**: Yahoo Finance via yfinance library
-**Data Period**: 1 year of daily closing prices
-**Currency**: USD (converted to JPY if needed)
-
----
-
-## Module: config_loader
-
-Configuration file parsing and management.
-
-### Functions
-
-#### `load_config`
+#### `AlgorithmMetadata`
 
 ```python
-def load_config(config_path: str) -> Dict[str, Any]
+@dataclass
+class AlgorithmMetadata:
+    name: str
+    description: str
+    version: str
+    author: str
+    parameters: Dict[str, Any]
+    category: str
 ```
 
-**Description**: Loads and parses a YAML configuration file.
-
-**Parameters**:
-- `config_path` (str): Path to the YAML configuration file
-
-**Returns**:
-- `Dict[str, Any]`: Parsed configuration dictionary
-
-**Raises**:
-- `ConfigNotFoundError`: If the configuration file doesn't exist
-- `ConfigParseError`: If the YAML file has syntax errors
-- `ConfigError`: If the configuration is invalid
-
-**Configuration Schema**:
-```yaml
-default_settings:
-  base_amount: 10000
-  asymmetric_coefficient: 2.0
-
-stocks:
-  - ticker: "SPY"
-    base_amount: 2000
-    reference_price: 400.0
-    asymmetric_coefficient: 1.5
-  - ticker: "AAPL"
-    base_amount: 3000
-```
-
-**Example**:
-```python
-from AAVC_calculate_tool.config_loader import load_config
-
-try:
-    config = load_config("portfolio.yaml")
-    default_amount = config["default_settings"]["base_amount"]
-    stocks = config["stocks"]
-    
-    for stock in stocks:
-        print(f"Ticker: {stock['ticker']}")
-        print(f"Amount: {stock.get('base_amount', default_amount)}")
-        
-except ConfigError as e:
-    print(f"Configuration error: {e}")
-```
-
-#### `prepare_calculation_jobs`
-
-```python
-def prepare_calculation_jobs(config: Dict[str, Any]) -> List[Dict[str, Any]]
-```
-
-**Description**: Prepares calculation jobs from configuration data.
-
-**Parameters**:
-- `config` (Dict[str, Any]): Configuration dictionary from `load_config`
-
-**Returns**:
-- `List[Dict[str, Any]]`: List of calculation job dictionaries
-
-**Job Structure**:
-```python
-{
-    "ticker": "SPY",
-    "base_amount": 2000,
-    "reference_price": 400.0,
-    "asymmetric_coefficient": 1.5
-}
-```
-
----
-
-## Module: recorder
-
-Investment logging and data persistence.
-
-### Types
-
-#### `LogEntry`
-
-```python
-LogEntry = TypedDict('LogEntry', {
-    'date': str,
-    'ticker': str,
-    'base_amount': float,
-    'reference_price': float,
-    'calculated_investment': float
-})
-```
-
-**Description**: Type definition for investment log entries.
+**Description**: アルゴリズムのメタデータを定義するデータクラス。
 
 **Fields**:
-- `date`: Investment date in YYYY-MM-DD format
-- `ticker`: Stock ticker symbol
-- `base_amount`: Base investment amount
-- `reference_price`: Reference price used in calculation
-- `calculated_investment`: Final calculated investment amount
+- `name` (str): アルゴリズムの名前。
+- `description` (str): アルゴリズムの説明。
+- `version` (str): アルゴリズムのバージョン。
+- `author` (str): アルゴリズムの作者。
+- `parameters` (Dict[str, Any]): アルゴリズムが受け入れるパラメータとその型、デフォルト値、説明。
+- `category` (str): アルゴリズムのカテゴリ（例: `value_averaging`, `systematic`, `passive`）。
+
+#### `InvestmentAlgorithm`
+
+```python
+class InvestmentAlgorithm(Protocol):
+    # ... (詳細な実装は省略)
+```
+
+**Description**: 全ての投資アルゴリズムが準拠すべき統一インターフェースを定義するプロトコル。
+
+**Methods**:
+- `get_metadata() -> AlgorithmMetadata`: アルゴリズムのメタデータを返します。
+- `calculate_investment(current_price: float, price_history: List[float], date_history: List[date], parameters: Dict[str, Any]) -> float`: 投資額を計算します。
+- `validate_parameters(parameters: Dict[str, Any]) -> bool`: パラメータの妥当性を検証します。
+
+#### `BaseAlgorithm`
+
+```python
+class BaseAlgorithm(ABC):
+    # ... (詳細な実装は省略)
+```
+
+**Description**: `InvestmentAlgorithm` プロトコルを実装するための抽象基底クラス。
+
+**Methods**:
+- `get_metadata()`: 抽象メソッド。サブクラスで実装必須。
+- `calculate_investment()`: 抽象メソッド。サブクラスで実装必須。
+- `validate_parameters()`: デフォルト実装を提供し、サブクラスでオーバーライド可能。
+
+#### `AlgorithmRegistry`
+
+```python
+class AlgorithmRegistry:
+    # ... (詳細な実装は省略)
+```
+
+**Description**: 利用可能な投資アルゴリズムを登録・管理するクラス。
+
+**Methods**:
+- `register(algorithm: InvestmentAlgorithm) -> None`: アルゴリズムをレジストリに登録します。
+- `get_algorithm(name: str) -> Optional[InvestmentAlgorithm]`: 指定された名前のアルゴリズムインスタンスを返します。
+- `list_algorithms() -> List[str]`: 登録されている全てのアルゴリズムの名前のリストを返します。
+- `get_metadata(name: str) -> Optional[AlgorithmMetadata]`: 指定されたアルゴリズムのメタデータを返します。
+
+---
+
+## Module: plugin_loader
+
+アルゴリズムレジストリの初期化と、デフォルトアルゴリズムの登録を管理します。
 
 ### Functions
 
-#### `record_investment`
+#### `initialize_registry`
 
 ```python
-def record_investment(log_entry: LogEntry, log_file: str = "investment_log.csv") -> None
+def initialize_registry():
 ```
 
-**Description**: Records an investment calculation to a CSV log file.
+**Description**: アルゴリズムレジストリを初期化し、デフォルトのアルゴリズム（AAVC, DCA, Buy & Hold）を登録します。
+
+**Returns**:
+- `AlgorithmRegistry`: 初期化されたアルゴリズムレジストリインスタンス。
+
+### Global Variables
+
+#### `ALGORITHM_REGISTRY`
+
+```python
+ALGORITHM_REGISTRY: AlgorithmRegistry
+```
+
+**Description**: アプリケーション全体で共有されるグローバルなアルゴリズムレジストリインスタンス。`initialize_registry()` によって初期化されます。
+
+---
+
+## Module: backtester
+
+複数アルゴリズムのバックテスト実行、パフォーマンス分析、結果の集約と比較機能を提供します。
+
+### Classes
+
+#### `EnhancedBacktestResult`
+
+```python
+@dataclass
+class EnhancedBacktestResult:
+    algorithm_name: str
+    final_value: float
+    total_invested: float
+    total_return: float
+    annual_return: float
+    max_drawdown: float
+    volatility: float
+    sharpe_ratio: float
+    portfolio_history: List[float]
+    investment_history: List[float]
+    dates: List[date]
+    metadata: Dict[str, Any]
+```
+
+**Description**: 単一アルゴリズムのバックテスト結果を詳細に格納するデータクラス。
+
+**Fields**:
+- `algorithm_name` (str): アルゴリズムの名前。
+- `final_value` (float): 最終ポートフォリオ評価額。
+- `total_invested` (float): 総投資額。
+- `total_return` (float): 総リターン率。
+- `annual_return` (float): 年率リターン率。
+- `max_drawdown` (float): 最大ドローダウン率。
+- `volatility` (float): 年率ボラティリティ。
+- `sharpe_ratio` (float): シャープレシオ。
+- `portfolio_history` (List[float]): 日々のポートフォリオ評価額の履歴。
+- `investment_history` (List[float]): 日々の投資額の履歴。
+- `dates` (List[date]): バックテスト期間の日付リスト。
+- `metadata` (Dict[str, Any]): バックテストに使用されたアルゴリズムのパラメータ。
+
+#### `ComparisonResult`
+
+```python
+@dataclass
+class ComparisonResult:
+    results: Dict[str, EnhancedBacktestResult]
+    summary: Dict[str, Any]
+    rankings: Dict[str, List[str]]
+    correlations: Dict[str, Dict[str, float]]
+```
+
+**Description**: 複数アルゴリズムの比較バックテスト結果を集約するデータクラス。
+
+**Fields**:
+- `results` (Dict[str, EnhancedBacktestResult]): 各アルゴリズムの`EnhancedBacktestResult`をアルゴリズム名をキーとする辞書。
+- `summary` (Dict[str, Any]): 比較全体のサマリー情報（例: 最もパフォーマンスの良いアルゴリズム）。
+- `rankings` (Dict[str, List[str]]): 各パフォーマンス指標に基づくアルゴリズムのランキング。
+- `correlations` (Dict[str, Dict[str, float]]): アルゴリズム間のポートフォリオ履歴の相関行列。
+
+### Functions
+
+#### `run_comparison_backtest`
+
+```python
+def run_comparison_backtest(
+    ticker: str,
+    start_date_str: str,
+    end_date_str: str,
+    base_parameters: Dict[str, Any],
+    algorithm_names: Optional[List[str]] = None
+) -> ComparisonResult
+```
+
+**Description**: 指定された銘柄と期間で、複数の投資アルゴリズムのバックテストを実行し、比較結果を返します。
 
 **Parameters**:
-- `log_entry` (LogEntry): Investment log entry to record
-- `log_file` (str, optional): Path to the log file. Defaults to "investment_log.csv"
+- `ticker` (str): バックテスト対象の銘柄のティッカーシンボル。
+- `start_date_str` (str): バックテストの開始日（YYYY-MM-DD形式）。
+- `end_date_str` (str): バックテストの終了日（YYYY-MM-DD形式）。
+- `base_parameters` (Dict[str, Any]): 全てのアルゴリズムに適用される共通の基本パラメータ、またはアルゴリズム固有のパラメータを含む辞書。
+- `algorithm_names` (Optional[List[str]]): 実行するアルゴリズム名のリスト。`None`の場合、登録されているデフォルトアルゴリズムを使用します。
+
+**Returns**:
+- `ComparisonResult`: 複数アルゴリズムの比較結果を含むオブジェクト。
 
 **Raises**:
-- `LogWriteError`: If there's an error writing to the log file
+- `ValueError`: 指定されたアルゴリズムがレジストリに見つからない場合、またはパラメータが不正な場合。
+- `TickerNotFoundError`: 銘柄が見つからない場合。
+- `DataFetchError`: 価格データの取得に失敗した場合。
 
-**Example**:
+---
+
+## Module: display
+
+バックテスト結果をコンソールに表示するための機能を提供します。
+
+### Functions
+
+#### `generate_dynamic_summary_table`
+
 ```python
-from AAVC_calculate_tool.recorder import record_investment, LogEntry
-from datetime import datetime
-
-log_entry: LogEntry = {
-    "date": datetime.now().strftime("%Y-%m-%d"),
-    "ticker": "AAPL",
-    "base_amount": 10000.0,
-    "reference_price": 150.0,
-    "calculated_investment": 8500.0
-}
-
-try:
-    record_investment(log_entry, "my_portfolio.csv")
-    print("Investment logged successfully")
-except LogWriteError as e:
-    print(f"Error logging investment: {e}")
+def generate_dynamic_summary_table(
+    comparison_result: ComparisonResult,
+    mode: str = "simple"
+) -> str
 ```
 
-**File Format**: CSV with headers: `date,ticker,base_amount,reference_price,calculated_investment`
-**File Creation**: Automatically creates file with headers if it doesn't exist
-**Append Mode**: New entries are appended to existing files
+**Description**: 複数アルゴリズムの比較結果から、動的なサマリーテーブル（Markdown形式）を生成します。
+
+**Parameters**:
+- `comparison_result` (ComparisonResult): 複数アルゴリズムの比較結果オブジェクト。
+- `mode` (str, optional): 表示モード。`"simple"`（簡易版）または`"detailed"`（詳細版）を指定。デフォルトは`"simple"`。
+
+**Returns**:
+- `str`: 生成されたサマリーテーブルのMarkdown文字列。
+
+**Raises**:
+- `ValueError`: 無効な`mode`が指定された場合。
+
+---
+
+## Module: plotter
+
+バックテスト結果をグラフとして可視化するための機能を提供します。
+
+### Functions
+
+#### `plot_multi_algorithm_chart`
+
+```python
+def plot_multi_algorithm_chart(
+    comparison_result: ComparisonResult,
+    output_filename: str = "multi_algorithm_comparison_chart.png"
+) -> str
+```
+
+**Description**: 複数アルゴリズムのポートフォリオ価値の推移を比較するチャートを生成し、画像ファイルとして保存します。
+
+**Parameters**:
+- `comparison_result` (ComparisonResult): 複数アルゴリズムの比較結果オブジェクト。
+- `output_filename` (str, optional): 生成されるチャート画像のファイル名。デフォルトは`"multi_algorithm_comparison_chart.png"`。
+
+**Returns**:
+- `str`: 保存されたチャート画像の絶対パス。
 
 ---
 
 ## Module: __main__
 
-Command-line interface entry point.
+コマンドラインインターフェースのエントリーポイント。
 
 ### Functions
 
@@ -270,7 +331,7 @@ Command-line interface entry point.
 def main() -> None
 ```
 
-**Description**: Main entry point for the CLI application.
+**Description**: CLIアプリケーションのメインエントリーポイント。コマンドライン引数を解析し、`calc`または`backtest`サブコマンドの処理をディスパッチします。
 
 **CLI Structure**:
 ```bash
@@ -278,176 +339,49 @@ python -m AAVC_calculate_tool [subcommand] [options]
 ```
 
 **Subcommands**:
-- `calc`: Calculate investment amounts
-- `backtest`: Run backtesting (planned)
+- `calc`: 投資額を計算します。
+- `backtest`: 複数アルゴリズムのバックテストを実行します。
 
-**Calc Command Options**:
-- `--ticker, -t`: Stock ticker symbol
-- `--config, -c`: Configuration file path
-- `--amount, -a`: Base investment amount
-- `--ref-price, -r`: Reference price
-- `--log-file`: Custom log file path
+**`calc` Command Options**:
+- `--ticker, -t`: 銘柄コード。
+- `--config, -c`: 設定ファイルのパス。
+- `--amount, -a`: 基準投資額。
+- `--ref-price, -r`: 基準価格。
+- `--log-file`: ログファイルのパス。
+
+**`backtest` Command Options**:
+- `--ticker, -t`: バックテスト対象の銘柄コード。
+- `--start-date`: バックテストの開始日（YYYY-MM-DD）。
+- `--end-date`: バックテストの終了日（YYYY-MM-DD）。
+- `--amount, -a`: 基準投資額。
+- `--algorithms`: 比較するアルゴリズムのカンマ区切りリスト。
+- `--algorithm-params`: アルゴリズム固有のパラメータ。
+- `--compare-mode`: 比較結果の表示モード（`simple`または`detailed`）。
+- `--plot`: 比較チャートを生成するかどうか。
 
 **Example Usage**:
 ```bash
-# Single stock calculation
+# 単一銘柄の投資額計算
 python -m AAVC_calculate_tool calc --ticker AAPL --amount 10000
 
-# Configuration file calculation
+# 設定ファイルからの投資額計算
 python -m AAVC_calculate_tool calc --config portfolio.yaml
 
-# With custom log file
-python -m AAVC_calculate_tool calc --ticker SPY --amount 5000 --log-file custom_log.csv
-```
+# 複数アルゴリズムのバックテスト
+python -m src.AAVC_calculate_tool backtest 
+  --ticker AAPL 
+  --start-date 2023-01-01 
+  --end-date 2024-01-01 
+  --amount 10000 
+  --algorithms "aavc,dca,buy_and_hold" 
+  --plot
 
----
-
-## Exception Classes
-
-### `TickerNotFoundError`
-
-```python
-class TickerNotFoundError(Exception):
-    """Raised when a ticker symbol is not found."""
-    pass
-```
-
-### `DataFetchError`
-
-```python
-class DataFetchError(Exception):
-    """Raised when there's an error fetching data."""
-    pass
-```
-
-### `ConfigNotFoundError`
-
-```python
-class ConfigNotFoundError(Exception):
-    """Raised when a configuration file is not found."""
-    pass
-```
-
-### `ConfigParseError`
-
-```python
-class ConfigParseError(Exception):
-    """Raised when there's an error parsing configuration."""
-    pass
-```
-
-### `ConfigError`
-
-```python
-class ConfigError(Exception):
-    """Raised when configuration is invalid."""
-    pass
-```
-
-### `LogWriteError`
-
-```python
-class LogWriteError(Exception):
-    """Raised when there's an error writing to log files."""
-    pass
-```
-
----
-
-## Data Types and Constants
-
-### Supported Ticker Formats
-
-- **US Stocks**: AAPL, SPY, QQQ
-- **Japanese Stocks**: 7203.T (Toyota), 6758.T (Sony)
-- **ETFs**: SPY, QQQ, VTI
-- **International**: ^GSPC (S&P 500), ^DJI (Dow Jones)
-
-### Price Data Format
-
-- **Frequency**: Daily closing prices
-- **Period**: 1 year (252 trading days)
-- **Currency**: USD (primary), JPY (converted)
-- **Data Source**: Yahoo Finance
-
-### Configuration File Format
-
-- **Format**: YAML
-- **Encoding**: UTF-8
-- **Required Fields**: `default_settings.base_amount`, `stocks[].ticker`
-- **Optional Fields**: `asymmetric_coefficient`, `reference_price`
-
----
-
-## Performance Characteristics
-
-### Time Complexity
-
-- **Data Fetching**: O(1) for single ticker, O(n) for n tickers
-- **AAVC Calculation**: O(m) where m is the number of price points
-- **Configuration Loading**: O(n) where n is the number of stocks
-- **Logging**: O(1) per log entry
-
-### Memory Usage
-
-- **Price Data**: ~2KB per ticker (252 float values)
-- **Configuration**: ~1KB per stock entry
-- **Log Files**: Grows linearly with number of calculations
-
-### Network Operations
-
-- **Data Fetching**: 1 HTTP request per ticker
-- **Rate Limiting**: Respects Yahoo Finance rate limits
-- **Caching**: No built-in caching (implemented by yfinance)
-
----
-
-## Best Practices
-
-### Error Handling
-
-```python
-try:
-    prices = fetch_price_history(ticker)
-    investment = calculate_aavc_investment(prices, amount, ref_price)
-    record_investment(log_entry, log_file)
-except TickerNotFoundError:
-    print(f"Ticker {ticker} not found")
-except DataFetchError as e:
-    print(f"Data fetch error: {e}")
-except ValueError as e:
-    print(f"Calculation error: {e}")
-except LogWriteError as e:
-    print(f"Logging error: {e}")
-```
-
-### Configuration Management
-
-```python
-# Load configuration once
-config = load_config("config.yaml")
-
-# Process multiple stocks
-jobs = prepare_calculation_jobs(config)
-for job in jobs:
-    try:
-        # Process each job
-        prices = fetch_price_history(job["ticker"])
-        investment = calculate_aavc_investment(**job)
-        # Log result
-    except Exception as e:
-        print(f"Error processing {job['ticker']}: {e}")
-        continue
-```
-
-### Logging Strategy
-
-```python
-# Use descriptive log file names
-log_file = f"portfolio_{datetime.now().strftime('%Y%m')}.csv"
-
-# Log all calculations for audit trail
-record_investment(log_entry, log_file)
-
-# Consider log rotation for long-term use
+# アルゴリズム固有パラメータを指定したバックテスト
+python -m src.AAVC_calculate_tool backtest 
+  --ticker SPY 
+  --start-date 2022-01-01 
+  --end-date 2023-01-01 
+  --amount 5000 
+  --algorithms "aavc" 
+  --algorithm-params "aavc:asymmetric_coefficient=2.5"
 ``` 

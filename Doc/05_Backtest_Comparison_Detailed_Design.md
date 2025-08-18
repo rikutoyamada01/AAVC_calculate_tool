@@ -6,139 +6,139 @@
 ## 1. モジュールとファイル構造
 
 ### 1.1. 新規作成モジュール
-- **`AAVC_calculate_tool/backtester.py`**: コアなバックテストエンジンと各戦略ロジックを配置。
-- **`AAVC_calculate_tool/plotter.py`**: チャート描画ロジック。
-- **`AAVC_calculate_tool/display.py`**: コンソール表示ロジック。
+- **`AAVC_calculate_tool/algorithm_registry.py`**: アルゴリズムレジストリとインターフェースの定義。
+- **`AAVC_calculate_tool/plugin_loader.py`**: アルゴリズムレジストリの初期化とデフォルトアルゴリズムの登録。
 
 ### 1.2. 拡張モジュール
-- **`AAVC_calculate_tool/data_loader.py`**: 日付範囲指定による価格データ取得機能を追加
-- **`AAVC_calculate_tool/__main__.py`**: `backtest` サブコマンドの実装
+- **`AAVC_calculate_tool/backtester.py`**: 複数アルゴリズム対応のバックテストエンジン、パフォーマンス分析、結果集約機能。
+- **`AAVC_calculate_tool/display.py`**: 動的なサマリーテーブル生成ロジック。
+- **`AAVC_calculate_tool/plotter.py`**: 複数アルゴリズム対応の比較チャート描画ロジック。
+- **`AAVC_calculate_tool/__main__.py`**: 新規CLI引数の処理と、バックテスト実行、結果表示、チャート生成のオーケストレーション。
 
 ## 2. データ構造（型定義）の拡張と明確化
 
-曖昧な`dict`を避け、パラメータと結果に明確な型を定義する。
+複数アルゴリズム比較に対応するため、データ構造を拡張し、明確な型定義を行う。
 
 ```python
-# backtester.py
-from typing import TypedDict, List, Callable, Protocol
+# AAVC_calculate_tool/backtester.py
+from typing import Any, Dict, List, Optional, TypedDict
+from dataclasses import dataclass
+from datetime import date
+
+# algorithm_registry.py からインポート
+from .algorithm_registry import InvestmentAlgorithm
 
 # --- 入力パラメータの型定義 ---
 class BacktestParams(TypedDict):
+    """バックテスト入力パラメータ"""
     ticker: str
     start_date: str
     end_date: str
     base_amount: float
-    reference_price: float
-    asymmetric_coefficient: float
-    volatility_period: int
+    # algorithms, algorithm_params は CLI で処理され、個々のアルゴリズムに渡される
 
-# --- 戦略関数の型定義 ---
-class InvestmentStrategy(Protocol):
-    """投資戦略関数のインターフェース定義"""
-    def __call__(self, price_path: List[float], **kwargs) -> float:
-        ...
-
-# --- 結果の型定義 ---
-class BacktestResult(TypedDict):
-    # ... パフォーマンス指標 ...
+# --- 拡張されたバックテスト結果の型定義 ---
+@dataclass
+class EnhancedBacktestResult:
+    """拡張されたバックテスト結果"""
+    algorithm_name: str
+    final_value: float
+    total_invested: float
+    total_return: float
+    annual_return: float
+    max_drawdown: float
+    volatility: float
+    sharpe_ratio: float
     portfolio_history: List[float]
-    dates: List[datetime.date]
+    investment_history: List[float]
+    dates: List[date]
+    metadata: Dict[str, Any]
+
+@dataclass
+class ComparisonResult:
+    """比較結果の集約"""
+    results: Dict[str, EnhancedBacktestResult]
+    summary: Dict[str, Any]
+    rankings: Dict[str, List[str]]
+    correlations: Dict[str, Dict[str, float]]
 ```
 
-## 3. `backtester.py` の関数設計 (リファクタリング)
+## 3. `backtester.py` の関数設計
 
-コードの重複を避けるため、汎用的なシミュレーションエンジンと、個別の戦略関数に分離する。
+`backtester.py`は、複数アルゴリズムのバックテスト実行、パフォーマンス指標の計算、結果の集約と分析を担う。
 
-### 3.1. 汎用シミュレーションエンジン
+### 3.1. `run_comparison_backtest` 関数
+
+CLIから呼び出される主要な関数で、指定されたアルゴリズムリストに対してバックテストを実行し、比較結果を返す。
 
 ```python
-def _run_simulation_engine(
-    price_history: List[float],
-    dates: List[datetime.date],
-    strategy_func: InvestmentStrategy,
-    strategy_params: dict
-) -> BacktestResult:
-    """単一戦略のバックテストを実行する汎用エンジン"""
-    # 1. 初期化 (shares_owned, total_invested など)
-    # 2. メインループ: 日付と価格でループ
-    #    a. 戦略関数に必要なデータを準備 (価格のスライスなど)
-    #    b. investment_amount = strategy_func(data, **strategy_params)
-    #    c. 取引を実行し、保有株数や総投資額を更新
-    #    d. 日々の資産評価額を記録
-    # 3. ループ終了後、全パフォーマンス指標を計算
-    # 4. BacktestResultオブジェクトを返却
+def run_comparison_backtest(
+    ticker: str,
+    start_date_str: str,
+    end_date_str: str,
+    base_parameters: Dict[str, Any],
+    algorithm_names: Optional[List[str]] = None
+) -> ComparisonResult:
+    """複数アルゴリズムでの比較バックテストを実行"""
+    # 1. 価格履歴の取得
+    # 2. 実行するアルゴリズムの決定 (algorithm_namesがNoneならデフォルトを使用)
+    # 3. 各アルゴリズムに対して以下を実行:
+    #    a. ALGORITHM_REGISTRYからアルゴリズムインスタンスを取得
+    #    b. _get_algorithm_parameters でアルゴリズム固有パラメータを準備
+    #    c. パラメータの妥当性検証
+    #    d. _run_single_algorithm_backtest を呼び出し、単一アルゴリズムのバックテストを実行
+    #    e. 結果をresults辞書に格納
+    # 4. _analyze_results を呼び出し、結果を集約・分析してComparisonResultを生成
+    # 5. ComparisonResultを返却
 ```
 
-### 3.2. 個別の戦略関数
+### 3.2. 内部ヘルパー関数
 
-エンジンに渡すための、シンプルな責務を持つ関数群。
+- **`_run_single_algorithm_backtest`**: 単一の`InvestmentAlgorithm`インスタンスに対してバックテストシミュレーションを実行し、`EnhancedBacktestResult`を生成する。
+- **`_calculate_performance_metrics`**: ポートフォリオ履歴、投資履歴、日付リストから、最終資産評価額、総投資額、リターン、最大ドローダウン、ボラティリティ、シャープレシオなどのパフォーマンス指標を計算する。
+- **`_calculate_max_drawdown`**: ポートフォリオ履歴から最大ドローダウンを計算する。
+- **`_get_algorithm_parameters`**: アルゴリズムのメタデータとCLIから渡されたパラメータを基に、アルゴリズム固有のパラメータ辞書を生成する。
+- **`_analyze_results`**: 各アルゴリズムの`EnhancedBacktestResult`を集約し、サマリー統計、ランキング、相関分析を含む`ComparisonResult`を生成する。
+- **`_calculate_correlations`**: 各アルゴリズムのポートフォリオ履歴間の相関を計算する。
 
-```python
-def strategy_aavc(price_path: List[float], **params) -> float:
-    """AAVC戦略に基づき投資額を返す"""
-    return calculate_aavc_investment(price_path, **params)
+## 4. `plotter.py` / `display.py` の設計
 
-def strategy_dca(price_path: List[float], **params) -> float:
-    """DCA戦略: 常に基準額を返す"""
-    return params['base_amount']
+これらのモジュールは、`ComparisonResult` オブジェクトを受け取り、その内容を基に表示やチャート生成を行う。
 
-def strategy_buy_and_hold(price_path: List[float], **params) -> float:
-    """B&H戦略: 初日のみ全額投資し、以降は0を返す"""
-    if params['current_day_index'] == 0:
-        return params['total_capital']
-    return 0.0
-```
+### 4.1. `display.py`
 
-### 3.3. オーケストレーション関数
+- **`generate_dynamic_summary_table(comparison_result: ComparisonResult, mode: str) -> str`**:
+  - `ComparisonResult` を受け取り、`mode` (`simple` または `detailed`) に応じて動的なサマリーテーブル（Markdown形式）を生成する。
+  - `detailed` モードでは、パフォーマンス指標のランキングやアルゴリズム間の相関分析結果も表示する。
 
-```python
-def run_comparison_backtest(params: BacktestParams) -> dict[str, BacktestResult]:
-    """全戦略のバックテストを統括し、結果を辞書で返す"""
-    price_history, dates = fetch_price_history(params['ticker'], ...)
-    
-    # AAVCを最初に実行し、総投資額を決定
-    aavc_result = _run_simulation_engine(..., strategy_func=strategy_aavc, ...)
-    
-    # DCAを実行
-    dca_result = _run_simulation_engine(..., strategy_func=strategy_dca, ...)
-    
-    # B&Hを実行 (AAVCの総投資額を利用)
-    bnh_params = {'total_capital': aavc_result['total_invested']}
-    bnh_result = _run_simulation_engine(..., strategy_func=strategy_buy_and_hold, strategy_params=bnh_params)
-    
-    return {"AAVC": aavc_result, "DCA": dca_result, "Buy & Hold": bnh_result}
-```
+### 4.2. `plotter.py`
 
-## 4. `plotter.py` / `display.py` の設計 (変更なし)
-
-これらのモジュールは、`BacktestResult` を受け取るというインターフェースに変わりはないため、設計の変更は不要。
+- **`plot_multi_algorithm_chart(comparison_result: ComparisonResult, output_filename: str) -> str`**:
+  - `ComparisonResult` を受け取り、複数アルゴリズムのポートフォリオ価値の推移を比較するチャートを生成する。
+  - チャートはPNG画像として `output_filename` に保存される。
 
 ## 5. CLI (`__main__.py`) の修正
 
-`backtest` サブコマンドの処理フローを、新しいインターフェースに合わせて修正する。
+`__main__.py`は、新しいCLI引数に対応し、複数アルゴリズム比較バックテストのオーケストレーションを行う。
 
 ### 5.1. 引数パース処理
-1. 必須引数の検証（`--ticker`, `--start-date`, `--end-date`, `--amount`）
-2. オプション引数の設定（デフォルト値の適用）
-3. `BacktestParams` オブジェクトの作成
+1. `argparse` を使用して、`backtest` サブコマンドの以下の引数をパースする:
+   - 必須引数: `--ticker`, `--start-date`, `--end-date`, `--amount`
+   - オプション引数: `--algorithms`, `--algorithm-params`, `--compare-mode`, `--plot`
+2. `--algorithms` が指定された場合、カンマ区切りでアルゴリズム名のリストを生成する。
+3. `--algorithm-params` が指定された場合、`parse_algorithm_parameters` 関数（`__main__.py`内に実装）を使用して、アルゴリズム固有のパラメータ辞書を生成する。
 
-### 5.2. データ取得処理
-1. `fetch_price_history_by_date()` による指定期間の価格データ取得
-2. 日付文字列から `date` オブジェクトへの変換
+### 5.2. バックテスト実行
+1. `backtester.run_comparison_backtest` 関数を呼び出す。
+   - `ticker`, `start_date_str`, `end_date_str`, `base_parameters` (CLIの`--amount`と`--algorithm-params`から構築), `algorithm_names` (CLIの`--algorithms`から構築) を渡す。
 
-### 5.3. バックテスト実行
-1. `backtester.run_comparison_backtest(params)` の呼び出し
-2. 3つの戦略（AAVC、DCA、Buy & Hold）の並行実行
+### 5.3. 結果表示処理
+1. `display.generate_dynamic_summary_table(comparison_result, mode=args.compare_mode)` を呼び出し、サマリーテーブルを生成する。
+2. 生成されたテーブルをコンソールに出力する。
 
-### 5.4. 結果表示処理
-1. `display.generate_summary_table(results)` によるサマリーテーブル生成
-2. コンソールへの出力
+### 5.4. チャート生成処理（`--plot` 指定時）
+1. `plotter.plot_multi_algorithm_chart(comparison_result, output_filename)` を呼び出し、比較チャートを生成し、ファイルに保存する。
+2. 保存されたチャートのパスをコンソールに表示する。
 
-### 5.5. チャート生成処理（`--plot` 指定時）
-1. `plotter.plot_comparison_chart()` によるチャート生成
-2. ファイル保存と絶対パスの表示
-
-### 5.6. エラーハンドリング
-1. 各段階での適切なエラーキャッチ
-2. ユーザーフレンドリーなエラーメッセージの表示
-3. 適切な終了コードの設定
+### 5.5. エラーハンドリング
+- `TickerNotFoundError`, `DataFetchError`, `ValueError` などの例外を適切に捕捉し、ユーザーフレンドリーなエラーメッセージを表示して終了する。

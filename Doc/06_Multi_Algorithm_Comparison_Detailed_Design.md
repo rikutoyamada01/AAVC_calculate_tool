@@ -45,9 +45,8 @@
 
 #### 1.2.1. 新規作成モジュール
 - **`algorithm_registry.py`**: アルゴリズムレジストリとプラグイン管理
-- **`enhanced_strategies.py`**: 改良版アルゴリズムの実装
-- **`plugin_loader.py`**: プラグインの動的ロード機能
-- **`performance_analyzer.py`**: パフォーマンス分析と比較機能
+- **`plugin_loader.py`**: プラグインの動的ロード機能 (動的ロード機能は今後の実装課題)
+- **`backtester.py`**: パフォーマンス分析と比較機能 (backtester.pyに統合)
 
 #### 1.2.2. 拡張モジュール
 - **`backtester.py`**: 複数アルゴリズム対応の拡張
@@ -237,7 +236,7 @@ class DCAStrategy(BaseAlgorithm):
         return parameters.get("base_amount", 5000)
 ```
 
-### 3.2. 新規アルゴリズムの実装
+### 3.2. 新規アルゴリズムの実装 (計画中、未実装)
 
 ```python
 class EnhancedAAVCStrategy(BaseAlgorithm):
@@ -742,12 +741,12 @@ def plot_multi_algorithm_chart(
 - 既存アルゴリズムのプラグイン化
 - 基本インターフェースの統一
 
-### 7.2. フェーズ2: 新アルゴリズム実装 (Week 3-4)
+### 7.2. フェーズ2: 新アルゴリズム実装 (未実装)
 - 改良版AAVCの実装
 - 価格チャネル戦略の実装
 - ボラティリティ調整戦略の実装
 
-### 7.3. フェーズ3: 高度な機能 (Week 5-6)
+### 7.3. フェーズ3: 高度な機能 (未実装)
 - セクターローテーション戦略の実装
 - 詳細分析レポートの実装
 - パフォーマンス最適化

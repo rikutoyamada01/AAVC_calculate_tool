@@ -1,15 +1,12 @@
-"""
-Backtest engine and investment strategies for AAVC comparison.
-
-This module provides the core backtesting functionality to compare AAVC strategy
-with DCA (Dollar Cost Averaging) and Buy & Hold strategies.
-"""
-
+from dataclasses import dataclass
 from datetime import date
-from typing import TypedDict, List, Callable, Protocol, Dict, Any
+from typing import Any, Dict, List, Optional, TypedDict
+
 import numpy as np
-from .calculator import calculate_aavc_investment
+
+from .algorithm_registry import InvestmentAlgorithm
 from .data_loader import fetch_price_history_by_date
+from .plugin_loader import ALGORITHM_REGISTRY
 
 
 # --- Type Definitions ---
@@ -19,13 +16,13 @@ class BacktestParams(TypedDict):
     start_date: str
     end_date: str
     base_amount: float
-    reference_price: float
-    asymmetric_coefficient: float
-    volatility_period: int
+    # Add other common parameters that might be passed to algorithms
 
 
-class BacktestResult(TypedDict):
-    """Backtest result data"""
+@dataclass
+class EnhancedBacktestResult:
+    """拡張されたバックテスト結果"""
+    algorithm_name: str
     final_value: float
     total_invested: float
     total_return: float
@@ -34,167 +31,290 @@ class BacktestResult(TypedDict):
     volatility: float
     sharpe_ratio: float
     portfolio_history: List[float]
+    investment_history: List[float]
     dates: List[date]
+    metadata: Dict[str, Any]
 
 
-class InvestmentStrategy(Protocol):
-    """Investment strategy function interface"""
-    def __call__(self, price_path: List[float], **kwargs) -> float:
-        ...
-
-
-# --- Strategy Functions ---
-def strategy_aavc(price_path: List[float], **params) -> float:
-    """AAVC strategy: calculate investment based on AAVC algorithm"""
-    return calculate_aavc_investment(
-        price_path=price_path,
-        base_amount=params['base_amount'],
-        reference_price=params['reference_price'],
-        asymmetric_coefficient=params.get('asymmetric_coefficient', 1.0)
-    )
-
-
-def strategy_dca(price_path: List[float], **params) -> float:
-    """DCA strategy: always invest the base amount"""
-    return params['base_amount']
-
-
-def strategy_buy_and_hold(price_path: List[float], **params) -> float:
-    """Buy & Hold strategy: invest total capital on first day only"""
-    if params['current_day_index'] == 0:
-        return params['total_capital']
-    return 0.0
+@dataclass
+class ComparisonResult:
+    """比較結果の集約"""
+    results: Dict[str, EnhancedBacktestResult]
+    summary: Dict[str, Any]
+    rankings: Dict[str, List[str]]
+    correlations: Dict[str, Dict[str, float]]
 
 
 # --- Core Simulation Engine ---
-def _run_simulation_engine(
-    price_history: List[float],
+def _run_single_algorithm_backtest(
+    algorithm: InvestmentAlgorithm,
+    prices: List[float],
     dates: List[date],
-    strategy_func: InvestmentStrategy,
-    strategy_params: Dict[str, Any]
-) -> BacktestResult:
-    """
-    Run a single strategy backtest using the generic simulation engine.
-    
-    Args:
-        price_history: List of daily prices
-        dates: List of corresponding dates
-        strategy_func: Strategy function to execute
-        strategy_params: Parameters for the strategy
-        
-    Returns:
-        BacktestResult containing performance metrics and history
-    """
+    parameters: Dict[str, Any]
+) -> EnhancedBacktestResult:
+    """単一アルゴリズムのバックテストを実行"""
+
     shares_owned = 0.0
     total_invested = 0.0
     portfolio_history = []
-    
-    for i, (price, current_date) in enumerate(zip(price_history, dates)):
-        # Prepare strategy parameters
-        current_params = strategy_params.copy()
-        current_params['current_day_index'] = i
-        
-        # Get investment amount from strategy
-        investment_amount = strategy_func(price_history[:i+1], **current_params)
-        
-        # Execute trade
+    investment_history = []
+
+    for i, (price, _current_date) in enumerate(zip(prices, dates)):
+        # 投資額を計算
+        investment_amount = algorithm.calculate_investment(
+            price, prices[:i+1], dates[:i+1], parameters
+        )
+
+        # 取引を実行
         if investment_amount > 0:
             shares_bought = investment_amount / price
             shares_owned += shares_bought
             total_invested += investment_amount
-        
-        # Calculate current portfolio value
-        current_value = shares_owned * price
-        portfolio_history.append(current_value)
-    
-    # Calculate performance metrics
-    final_value = portfolio_history[-1]
-    total_return = ((final_value - total_invested) / total_invested * 100) if total_invested > 0 else 0
-    
-    # Annual return (simple approximation)
-    years = len(dates) / 252  # Assuming 252 trading days per year
-    annual_return = ((final_value / total_invested) ** (1 / years) - 1) * 100 if total_invested > 0 and years > 0 else 0
-    
-    # Max drawdown
+
+        # ポートフォリオ価値を更新
+        portfolio_value = shares_owned * price
+        portfolio_history.append(portfolio_value)
+        investment_history.append(investment_amount)
+
+    # パフォーマンス指標を計算
+    performance_metrics = _calculate_performance_metrics(
+        portfolio_history, investment_history, dates
+    )
+
+    return EnhancedBacktestResult(
+        algorithm_name=algorithm.get_metadata().name,
+        **performance_metrics,
+        portfolio_history=portfolio_history,
+        investment_history=investment_history,
+        dates=dates,
+        metadata=parameters
+    )
+
+
+def _calculate_performance_metrics(
+    portfolio_history: List[float],
+    investment_history: List[float],
+    dates: List[date]
+) -> Dict[str, Any]:
+    """パフォーマンス指標を計算"""
+
+    final_value = portfolio_history[-1] if portfolio_history else 0
+    total_invested = sum(investment_history)
+
+    # 収益率の計算
+    total_return = ((final_value / total_invested - 1) * 100) if total_invested > 0 else 0
+
+    # 年率収益率の計算
+    years = (dates[-1] - dates[0]).days / 365.25 if len(dates) > 1 else 0
+    annual_return = ((final_value / total_invested) ** (1/years) - 1) * 100 \
+        if years > 0 and total_invested > 0 else 0
+
+    # 最大下落率の計算
+    max_drawdown = _calculate_max_drawdown(portfolio_history)
+
+    # ボラティリティの計算
+    returns = np.diff(np.log(portfolio_history)) if len(portfolio_history) > 1 else [0]
+    volatility = np.std(returns) * np.sqrt(252) * 100 if returns.size > 0 else 0
+
+    # シャープレシオの計算
+    risk_free_rate = 0.02  # 仮の無リスク金利
+    excess_returns = np.array(returns) - risk_free_rate/252
+    sharpe_ratio = np.mean(excess_returns) / np.std(excess_returns) * np.sqrt(252) \
+        if np.std(excess_returns) > 0 else 0
+
+    return {
+        "final_value": final_value,
+        "total_invested": total_invested,
+        "total_return": total_return,
+        "annual_return": annual_return,
+        "max_drawdown": max_drawdown,
+        "volatility": volatility,
+        "sharpe_ratio": sharpe_ratio
+    }
+
+
+def _calculate_max_drawdown(portfolio_history: List[float]) -> float:
+    """最大下落率を計算"""
+    if not portfolio_history:
+        return 0.0
+
     peak = portfolio_history[0]
-    max_drawdown = 0
+    max_dd = 0.0
+
     for value in portfolio_history:
         if value > peak:
             peak = value
-        drawdown = (peak - value) / peak * 100
-        if drawdown > max_drawdown:
-            max_drawdown = drawdown
-    
-    # Volatility (annualized)
-    returns = []
-    for i in range(1, len(portfolio_history)):
-        if portfolio_history[i-1] > 0:
-            daily_return = (portfolio_history[i] - portfolio_history[i-1]) / portfolio_history[i-1]
-            returns.append(daily_return)
-    
-    volatility = np.std(returns) * np.sqrt(252) * 100 if returns else 0
-    
-    # Sharpe ratio (assuming 0% risk-free rate for simplicity)
-    sharpe_ratio = (np.mean(returns) * 252) / (np.std(returns) * np.sqrt(252)) if returns and np.std(returns) > 0 else 0
-    
-    return BacktestResult(
-        final_value=final_value,
-        total_invested=total_invested,
-        total_return=total_return,
-        annual_return=annual_return,
-        max_drawdown=max_drawdown,
-        volatility=volatility,
-        sharpe_ratio=sharpe_ratio,
-        portfolio_history=portfolio_history,
-        dates=dates
+        drawdown = (peak - value) / peak
+        max_dd = max(max_dd, drawdown)
+
+    return max_dd * 100
+
+
+def _get_algorithm_parameters(
+    algorithm_name: str,
+    base_parameters: Dict[str, Any]
+) -> Dict[str, Any]:
+    """アルゴリズム固有のパラメータを取得"""
+
+    algorithm = ALGORITHM_REGISTRY.get_algorithm(algorithm_name)
+    if algorithm is None:
+        return base_parameters
+
+    metadata = algorithm.get_metadata()
+    algorithm_params = {}
+
+    # Start with default parameters from metadata
+    for param_name, param_info in metadata.parameters.items():
+        if "default" in param_info:
+            algorithm_params[param_name] = param_info["default"]
+
+    # Override with general base_parameters
+    for param_name, param_value in base_parameters.items():
+        if param_name in metadata.parameters:
+            algorithm_params[param_name] = param_value
+
+    # Override with algorithm-specific parameters if present
+    if algorithm_name in base_parameters and isinstance(base_parameters[algorithm_name], dict):
+        for param_name, param_value in base_parameters[algorithm_name].items():
+            if param_name in metadata.parameters: # Ensure it's a valid parameter for the algorithm
+                algorithm_params[param_name] = param_value
+
+    return algorithm_params
+
+
+def _analyze_results(results: Dict[str, EnhancedBacktestResult]) -> ComparisonResult:
+    """結果を分析して比較結果を生成"""
+
+    # サマリー統計
+    summary = {
+        "total_algorithms": len(results),
+        "best_performer": max(results.keys(), key=lambda k: results[k].total_return),
+        "worst_performer": min(results.keys(), key=lambda k: results[k].total_return),
+        "best_sharpe": max(results.keys(), key=lambda k: results[k].sharpe_ratio),
+        "lowest_drawdown": min(results.keys(), key=lambda k: results[k].max_drawdown)
+    }
+
+    # ランキング
+    rankings = {
+        "total_return": sorted(results.keys(),
+                               key=lambda k: results[k].total_return, reverse=True),
+        "sharpe_ratio": sorted(results.keys(),
+                               key=lambda k: results[k].sharpe_ratio, reverse=True),
+        "max_drawdown": sorted(results.keys(), key=lambda k: results[k].max_drawdown),
+        "volatility": sorted(results.keys(), key=lambda k: results[k].volatility)
+    }
+
+    # 相関分析
+    correlations = _calculate_correlations(results)
+
+    return ComparisonResult(
+        results=results,
+        summary=summary,
+        rankings=rankings,
+        correlations=correlations
     )
 
 
-# --- Main Comparison Function ---
-def run_comparison_backtest(params: BacktestParams) -> Dict[str, BacktestResult]:
-    """
-    Run backtest comparison for all three strategies.
-    
+def _calculate_correlations(
+    results: Dict[str, EnhancedBacktestResult]
+) -> Dict[str, Dict[str, float]]:
+    """アルゴリズム間の相関を計算"""
+
+    correlations = {}
+    algorithm_names = list(results.keys())
+
+    for i, name1 in enumerate(algorithm_names):
+        correlations[name1] = {}
+        for j, name2 in enumerate(algorithm_names):
+            if i == j:
+                correlations[name1][name2] = 1.0
+            else:
+                # ポートフォリオ履歴の相関を計算
+                # 長さが異なる場合は短い方に合わせる
+                len1 = len(results[name1].portfolio_history)
+                len2 = len(results[name2].portfolio_history)
+                min_len = min(len1, len2)
+
+                if min_len == 0:
+                    corr = 0.0  # データがない場合は相関なし
+                else:
+                    history1 = results[name1].portfolio_history[:min_len]
+                    history2 = results[name2].portfolio_history[:min_len]
+
+                    # numpy.corrcoefは入力が定数の場合にNaNを返すことがあるため、チェック
+                    if np.std(history1) == 0 or np.std(history2) == 0:
+                        corr = 0.0
+                    else:
+                        corr = np.corrcoef(
+                            history1,
+                            history2
+                        )[0, 1]
+                        corr = corr if not np.isnan(corr) else 0.0
+                correlations[name1][name2] = corr
+    return correlations
+
+
+def run_comparison_backtest(
+    ticker: str,
+    start_date_str: str,
+    end_date_str: str,
+    base_parameters: Dict[str, Any],
+    algorithm_names: Optional[List[str]] = None
+) -> ComparisonResult:
+    """複数アルゴリズムでの比較バックテストを実行
+
     Args:
-        params: Backtest parameters
-        
+        ticker: ティッカーシンボル
+        start_date_str: 開始日 (YYYY-MM-DD)
+        end_date_str: 終了日 (YYYY-MM-DD)
+        base_parameters: 全アルゴリズムに適用される基本パラメータ
+        algorithm_names: 実行するアルゴリズム名のリスト。Noneの場合、デフォルトアルゴリズムを使用。
+
     Returns:
-        Dictionary containing results for all strategies
+        ComparisonResult containing results for all strategies
     """
     # Fetch actual price history for the specified period
     price_history, date_strings = fetch_price_history_by_date(
-        params['ticker'], 
-        params['start_date'], 
-        params['end_date']
+        ticker,
+        start_date_str,
+        end_date_str
     )
-    
+
     # Convert date strings to date objects
     dates = [date.fromisoformat(date_str) for date_str in date_strings]
-    
-    # Run AAVC strategy first to get total investment amount
-    aavc_params = {
-        'base_amount': params['base_amount'],
-        'reference_price': params['reference_price'],
-        'asymmetric_coefficient': params.get('asymmetric_coefficient', 1.0)
-    }
-    aavc_result = _run_simulation_engine(
-        price_history, dates, strategy_aavc, aavc_params
-    )
-    
-    # Run DCA strategy
-    dca_params = {'base_amount': params['base_amount']}
-    dca_result = _run_simulation_engine(
-        price_history, dates, strategy_dca, dca_params
-    )
-    
-    # Run Buy & Hold strategy using AAVC's total investment
-    bnh_params = {'total_capital': aavc_result['total_invested']}
-    bnh_result = _run_simulation_engine(
-        price_history, dates, strategy_buy_and_hold, bnh_params
-    )
-    
-    return {
-        "AAVC": aavc_result,
-        "DCA": dca_result,
-        "Buy & Hold": bnh_result
-    }
+
+    if not price_history:
+        raise ValueError("No price data available for the specified period.")
+
+    if algorithm_names is None or len(algorithm_names) == 0:
+        # デフォルトアルゴリズム
+        algorithm_names = ["aavc", "dca", "buy_and_hold"]
+
+    results = {}
+
+    # 各アルゴリズムでバックテストを実行
+    for algorithm_name in algorithm_names:
+        algorithm = ALGORITHM_REGISTRY.get_algorithm(algorithm_name)
+        if algorithm is None:
+            raise ValueError(f"Algorithm '{algorithm_name}' not found in registry.")
+
+        # アルゴリズム固有のパラメータを取得
+        algo_specific_params = _get_algorithm_parameters(
+            algorithm_name, base_parameters
+        )
+
+        # パラメータの妥当性を検証
+        if not algorithm.validate_parameters(algo_specific_params):
+            raise ValueError(f"Invalid parameters for algorithm '{algorithm_name}'.")
+
+        # バックテストを実行
+        result = _run_single_algorithm_backtest(
+            algorithm, price_history, dates, algo_specific_params
+        )
+
+        results[algorithm_name] = result
+
+    # 結果の集約と分析
+    comparison_result = _analyze_results(results)
+
+    return comparison_result

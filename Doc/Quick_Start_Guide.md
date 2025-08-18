@@ -1,8 +1,8 @@
 # Quick Start Guide
 
-## Welcome to AAVC Calculate Tool!
+## はじめに
 
-This guide will help you get started with the AAVC Calculate Tool in just a few minutes. You'll learn how to calculate investment amounts using the AAVC algorithm for your favorite stocks.
+このガイドでは、AAVC Calculate Tool の使用方法を短時間で習得できます。複数の投資アルゴリズムを比較し、お気に入りの銘柄に対する投資額を計算する方法を学びます。
 
 ## What You'll Learn
 
@@ -51,7 +51,7 @@ python -m AAVC_calculate_tool --help
 
 You should see the help message with available commands.
 
-## Step 2: Your First Calculation
+## 基本的な使い方
 
 Let's start with a simple example - calculating the investment amount for Apple (AAPL).
 
@@ -66,7 +66,50 @@ python -m AAVC_calculate_tool calc --ticker "AAPL" --amount 10000
 - `--ticker "AAPL"`: Specifies Apple's stock symbol
 - `--amount 10000`: Sets your base investment amount to 10,000 JPY
 
-### Understanding the Output
+### 複数のアルゴリズムを比較する
+
+複数の投資アルゴリズムを比較して、最適な戦略を見つけることができます。
+
+```bash
+python -m AAVC_calculate_tool calc --ticker "AAPL" --amount 10000 --algorithms AAVC,SMA --algorithm-params '{"SMA": {"period": 20}}' --compare-mode
+```
+
+**What this does:**
+- `--algorithms AAVC,SMA`: AAVCとSMAの2つのアルゴリズムを比較します。
+- `--algorithm-params '{"SMA": {"period": 20}}'`: SMAアルゴリズムに`period=20`というパラメータを渡します。
+- `--compare-mode`: 比較モードを有効にし、各アルゴリズムの結果を並べて表示します。
+
+### アルゴリズムのパラメータを指定する
+
+各アルゴリズムに固有のパラメータを渡すことができます。
+
+```bash
+python -m AAVC_calculate_tool calc --ticker "GOOG" --amount 5000 --asymmetric-coefficient 2.5 --max-multiplier 4.0
+```
+
+**What this does:**
+- `--ticker "GOOG"`: Googleのティッカーシンボルを指定します。
+- `--amount 5000`: 基準投資額を5000 JPYに設定します。
+- `--asymmetric-coefficient 2.5`: AAVCアルゴリズムの非対称係数を2.5に設定します。
+- `--max-multiplier 4.0`: AAVCアルゴリズムの最大投資額の基準額に対する倍率を4.0に設定します。
+
+### S&P 500指数を用いた現実的な例
+
+S&P 500指数に連動するETFであるSPYを対象に、AAVCアルゴリズムとSMA（単純移動平均）アルゴリズムを比較しながら投資額を計算する例です。基準投資額を10,000 JPYとし、SMAアルゴリズムの期間を50日としています。
+
+```bash
+python -m AAVC_calculate_tool calc --ticker "SPY" --amount 10000 --algorithms AAVC,SMA --algorithm-params '{"SMA": {"period": 50}}' --compare-mode
+```
+
+**What this does:**
+- `--ticker "SPY"`: S&P 500指数に連動するETFであるSPYを対象とします。
+- `--amount 10000`: 基準投資額を10,000 JPYに設定します。
+- `--algorithms AAVC,SMA`: AAVCアルゴリズムとSMAアルゴリズムの両方を使用して投資額を計算します。
+- `--algorithm-params '{"SMA": {"period": 50}}'`: SMAアルゴリズムに`period=50`というパラメータ（50日移動平均）を渡します。
+- `--compare-mode`: 各アルゴリズムの計算結果を並べて表示し、比較しやすくします。
+
+
+### 出力結果
 
 After running the command, you'll see something like:
 
@@ -74,14 +117,22 @@ After running the command, you'll see something like:
 --- Calculation Result ---
 Ticker: AAPL
 Date: 2025-08-16
+Algorithm: AAVC
 Investment Amount: JPY 4052
+--------------------------
+
+--- Comparison Result ---
+Ticker: AAPL
+Date: 2025-08-16
+AAVC Investment Amount: JPY 4052
+SMA Investment Amount: JPY 5000
 --------------------------
 ```
 
 **What this means:**
-- The AAVC algorithm calculated that you should invest **4,052 JPY** today
-- This is less than your base amount (10,000 JPY) because Apple's stock price is currently above the reference price
-- The algorithm automatically adjusts your investment based on market conditions
+- 単一アルゴリズムの場合、指定されたアルゴリズムが計算した投資額が表示されます。
+- 比較モードの場合、各アルゴリズムが計算した投資額が並べて表示され、異なる戦略の結果を簡単に比較できます。
+- アルゴリズムは、市場の状況に基づいて投資額を自動的に調整します。
 
 ## Step 3: Customize Your Calculation
 

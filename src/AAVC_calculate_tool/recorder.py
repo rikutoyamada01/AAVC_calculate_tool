@@ -1,37 +1,42 @@
 import csv
-from pathlib import Path
 from typing import TypedDict
 
 
-# Custom exception
-class LogWriteError(Exception):
-    """ログ書き込みに関するエラー"""
-    pass
-
 class LogEntry(TypedDict):
+    """Type definition for a log entry."""
     date: str
     ticker: str
     base_amount: float
     reference_price: float
     calculated_investment: float
 
-def record_investment(log_entry: LogEntry, file_path: str = "investment_log.csv") -> None:
-    """
-    計算結果のログをCSVファイルに追記する
 
-    :param log_entry: 記録するログデータ（辞書形式）
-    :param file_path: ログファイルのパス
+class LogWriteError(Exception):
+    """Custom exception for errors during log writing."""
+    pass
+
+
+def record_investment(log_entry: LogEntry, file_path: str = "investment_log.csv") -> None:
+    """投資結果をCSVファイルに記録する。
+
+    Args:
+        log_entry (LogEntry): 記録するログエントリ。
+        file_path (str): ログファイルのパス (デフォルト: investment_log.csv)。
     """
-    file_exists = Path(file_path).exists()
-    fieldnames = list(LogEntry.__annotations__.keys())
+    file_exists = False
+    try:
+        with open(file_path, 'r') as f:
+            file_exists = True
+    except FileNotFoundError:
+        pass  # File does not exist, will be created
 
     try:
-        with open(file_path, 'a', newline='', encoding='utf-8') as csvfile:
-            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+        with open(file_path, 'a', newline='', encoding='utf-8') as f:
+            writer = csv.DictWriter(f, fieldnames=list(log_entry.keys()))
 
             if not file_exists:
-                writer.writeheader()
+                writer.writeheader()  # Write header only if file is new
 
             writer.writerow(log_entry)
     except IOError as e:
-        raise LogWriteError(f"Failed to write log to {file_path}: {e}")
+        raise LogWriteError(f"Failed to write log to {file_path}: {e}") from e

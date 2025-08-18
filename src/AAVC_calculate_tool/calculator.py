@@ -1,53 +1,140 @@
+from datetime import date
+from typing import Any, Dict, List
+
 import numpy as np
 
+from AAVC_calculate_tool.algorithm_registry import AlgorithmMetadata, BaseAlgorithm
 
-def calculate_aavc_investment(price_path: list, base_amount: float, reference_price: float, asymmetric_coefficient: float = 2.0) -> float:
-    """
-    AAVCアルゴリズムに基づいて、その日の投資額を計算する関数
 
-    :param price_path: 過去N日間の株価推移のリスト（例: [1000, 1010, 990, ...])
-    :param base_amount: 基準となる投資額
-    :param reference_price: 基準価格
-    :param asymmetric_coefficient: 非対称性係数（デフォルトは2.0）
-    :return: その日に投資すべき金額
-    """
+class AAVCStrategy(BaseAlgorithm):
+    """AAVC戦略のプラグイン化"""
 
-    # --- 1. 株価の確認 ---
-    if not price_path:
-        return 0.0  # 株価データがない場合は0を返す
+    def get_metadata(self) -> AlgorithmMetadata:
+        return AlgorithmMetadata(
+            name="aavc",
+            description="Adaptive Asset Value Control Strategy",
+            version="1.0",
+            author="AAVC Team",
+            parameters={
+                "base_amount": {"type": "float", "default": 5000,
+                                "description": "基準投資額"},
+                "reference_price": {"type": "float", "default": None,
+                                    "description": "基準価格"},
+                "asymmetric_coefficient": {"type": "float", "default": 2.0,
+                                           "description": "非対称性係数"},
+                "max_investment_multiplier": {"type": "float", "default": 3.0,
+                                              "description": "最大投資額の基準額に対する倍率"},
+            },
+            category="value_averaging"
+        )
 
-    current_price = price_path[-1]
+    def calculate_investment(
+        self,
+        current_price: float,
+        price_history: List[float],
+        date_history: List[date],
+        parameters: Dict[str, Any]
+    ) -> float:
+        base_amount = parameters.get("base_amount", 5000.0)
+        reference_price = parameters.get("reference_price")
+        if reference_price is None:
+            if price_history:
+                reference_price = price_history[0]
+            else:
+                reference_price = current_price # Fallback if no history
+        asymmetric_coefficient = parameters.get("asymmetric_coefficient", 2.0)
+        max_investment_multiplier = parameters.get("max_investment_multiplier", 3.0)
 
-    # --- 2. ボラティリティの計算 ---
-    if len(price_path) < 2:
-        volatility = 0.0
-    else:
-        # 価格の変動率を計算
-        price_changes = np.abs(np.diff(price_path) / price_path[:-1])
-        volatility = np.mean(price_changes)
+        # --- 1. 株価の確認 ---
+        if not price_history:
+            return 0.0  # 株価データがない場合は0を返す
 
-    # --- 3. 乖離率の計算 ---
-    if reference_price == 0:
-        price_change_rate = 0.0
-    else:
-        price_change_rate = (reference_price - current_price) / reference_price
+        # --- 2. ボラティリティの計算 ---
+        if len(price_history) < 2:
+            volatility = 0.0
+        else:
+            # 価格の変動率を計算
+            price_changes = np.abs(np.diff(price_history) / price_history[:-1])
+            volatility = np.mean(price_changes)
 
-    # --- 4. 投資額調整率の計算 ---
-    # ボラティリティ調整係数を計算
-    volatility_adjustment_factor = 1.0 + (volatility / 0.01) # 基準ボラティリティは1%に設定
+        # --- 3. 乖離率の計算 ---
+        if reference_price == 0:
+            price_change_rate = 0.0
+        else:
+            price_change_rate = (reference_price - current_price) / reference_price
 
-    adjusted_rate = asymmetric_coefficient * price_change_rate * volatility_adjustment_factor
+        # --- 4. 投資額調整率の計算 ---
+        # ボラティリティ調整係数を計算
+        volatility_adjustment_factor = 1.0 + (volatility / 0.01)  # 基準ボラティリティは1%に設定
 
-    # --- 5. 最終投資額の計算 ---
-    calculated_amount = base_amount * (1 + adjusted_rate)
+        adjusted_rate = asymmetric_coefficient * price_change_rate * \
+            volatility_adjustment_factor
 
-    # --- 6. 投資額の制限 ---
-    # 投資額がマイナスにならないように
-    if calculated_amount < 0:
+        # --- 5. 最終投資額の計算 ---
+        calculated_amount = base_amount * (1 + adjusted_rate)
+
+        # --- 6. 投資額の制限 ---
+        # 投資額がマイナスにならないように
+        if calculated_amount < 0:
+            return 0.0
+
+        # 上限キャップ
+        if calculated_amount > base_amount * max_investment_multiplier:
+            return base_amount * max_investment_multiplier
+
+        return float(calculated_amount)
+
+
+class DCAStrategy(BaseAlgorithm):
+    """DCA戦略のプラグイン化"""
+
+    def get_metadata(self) -> AlgorithmMetadata:
+        return AlgorithmMetadata(
+            name="dca",
+            description="Dollar Cost Averaging Strategy",
+            version="1.0",
+            author="AAVC Team",
+            parameters={
+                "base_amount": {"type": "float", "default": 5000,
+                                "description": "毎回の投資額"}
+            },
+            category="systematic"
+        )
+
+    def calculate_investment(
+        self,
+        current_price: float,
+        price_history: List[float],
+        date_history: List[date],
+        parameters: Dict[str, Any]
+    ) -> float:
+        return parameters.get("base_amount", 5000.0)
+
+
+class BuyAndHoldStrategy(BaseAlgorithm):
+    """Buy & Hold戦略のプラグイン化"""
+
+    def get_metadata(self) -> AlgorithmMetadata:
+        return AlgorithmMetadata(
+            name="buy_and_hold",
+            description="Buy and Hold Strategy",
+            version="1.0",
+            author="AAVC Team",
+            parameters={
+                "initial_amount": {"type": "float", "default": 100000,
+                                   "description": "初回投資額"}
+            },
+            category="passive"
+        )
+
+    def calculate_investment(
+        self,
+        current_price: float,
+        price_history: List[float],
+        date_history: List[date],
+        parameters: Dict[str, Any]
+    ) -> float:
+        # Buy & Holdは初回のみ投資
+        if len(price_history) == 1:  # 最初のデータポイントでのみ投資
+            return parameters.get("initial_amount", 100000.0)
         return 0.0
-
-    # 上限キャップ（例: 基準額の3倍）
-    if calculated_amount > base_amount * 3:
-        return base_amount * 3
-
-    return float(calculated_amount)

@@ -1,4 +1,4 @@
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pandas as pd
 import pytest
@@ -7,59 +7,88 @@ from src.AAVC_calculate_tool.data_loader import (
     DataFetchError,
     TickerNotFoundError,
     fetch_price_history,
+    fetch_price_history_by_date,
 )
 
 
-# Mock yfinance for consistent testing and to avoid network calls
-@pytest.fixture
-def mock_yfinance_success():
-    # Clear the cache before each test to ensure fresh data fetching
-    fetch_price_history.cache_clear()
-    with patch('src.AAVC_calculate_tool.data_loader.yf') as mock_yf:
-        mock_yf.Ticker.return_value.history.return_value = \
-            pd.DataFrame({'Close': [100.0, 101.0, 102.0, 103.0, 104.0, 105.0]})
-        yield mock_yf
+class TestDataLoader:
+    """Test cases for the data_loader module."""
 
+    @pytest.fixture(autouse=True)
+    def setup(self):
+        # Clear cache before each test
+        from src.AAVC_calculate_tool.data_loader import _price_history_cache
+        _price_history_cache.clear()
 
-# Test fetch_price_history with valid ticker
-def test_fetch_price_history_valid_ticker(mock_yfinance_success):
-    prices = fetch_price_history("AAPL")
-    assert isinstance(prices, list)
-    assert len(prices) == 6
-    assert prices[0] == 100.0
-    assert prices[-1] == 105.0
-    mock_yfinance_success.Ticker.assert_called_with("AAPL")
-    mock_yfinance_success.Ticker.return_value.history.assert_called_with(period="1y")
+    def test_fetch_price_history_success(self):
+        with patch('src.AAVC_calculate_tool.data_loader.yf') as mock_yf:
+            # Mock yfinance Ticker and history method
+            mock_yf.Ticker.return_value.history.return_value = pd.DataFrame({
+                'Close': [100.0, 101.0, 102.0],
+                'Volume': [1000, 1000, 1000]
+            }, index=pd.to_datetime(['2023-01-01', '2023-01-02', '2023-01-03']))
 
-# Test fetch_price_history with invalid ticker (empty DataFrame)
-def test_fetch_price_history_invalid_ticker():
-    with patch('src.AAVC_calculate_tool.data_loader.yf') as mock_yf:
-        mock_yf.Ticker.return_value.history.return_value = pd.DataFrame() # Empty DataFrame
-        with pytest.raises(TickerNotFoundError) as excinfo:
-            fetch_price_history("INVALID")
-        assert "No data found for ticker 'INVALID'" in str(excinfo.value)
+            prices = fetch_price_history("AAPL")
+            assert prices == [100.0, 101.0, 102.0]
+            mock_yf.Ticker.assert_called_with("AAPL")
+            mock_yf.Ticker.return_value.history.assert_called_with(period="max")
 
-# Test fetch_price_history with general data fetch error
-def test_fetch_price_history_general_error():
-    with patch('src.AAVC_calculate_tool.data_loader.yf') as mock_yf:
-        mock_yf.Ticker.return_value.history.side_effect = Exception("Network error")
-        with pytest.raises(DataFetchError) as excinfo:
-            fetch_price_history("ERROR_TICKER")
-        assert "Failed to fetch data for 'ERROR_TICKER'" in str(excinfo.value)
-        assert "Network error" in str(excinfo.value)
+    def test_fetch_price_history_invalid_ticker(self):
+        with patch('src.AAVC_calculate_tool.data_loader.yf') as mock_yf:
+            mock_yf.Ticker.return_value.history.return_value = pd.DataFrame()  # Empty DataFrame
+            with pytest.raises(TickerNotFoundError) as excinfo:
+                fetch_price_history("INVALID")
+            assert "No data found for ticker 'INVALID'" in str(excinfo.value)
 
-# Test lru_cache
-def test_fetch_price_history_caching():
-    with patch('src.AAVC_calculate_tool.data_loader.yf') as mock_yf:
-        mock_yf.Ticker.return_value.history.return_value = \
-            pd.DataFrame({'Close': [100.0, 101.0]})
+    def test_fetch_price_history_data_fetch_error(self):
+        with patch('src.AAVC_calculate_tool.data_loader.yf') as mock_yf:
+            # Mock the Ticker instance's history method to raise an exception
+            mock_ticker_instance = MagicMock()
+            mock_yf.Ticker.return_value = mock_ticker_instance
+            mock_ticker_instance.history.side_effect = Exception("Network Error")
 
-        # First call, should hit yfinance
-        prices1 = fetch_price_history("CACHED_TICKER")
-        mock_yf.Ticker.return_value.history.assert_called_once()
+            with pytest.raises(DataFetchError) as excinfo:
+                fetch_price_history("AAPL")
+            assert "Failed to fetch data for 'AAPL': Network Error" in str(excinfo.value)
 
-        # Second call with same args, should use cache
-        prices2 = fetch_price_history("CACHED_TICKER")
-        mock_yf.Ticker.return_value.history.assert_called_once() # Still called once, as cache hit prevents second call
+    def test_fetch_price_history_cache(self):
+        with patch('src.AAVC_calculate_tool.data_loader.yf') as mock_yf:
+            mock_yf.Ticker.return_value.history.return_value = pd.DataFrame({
+                'Close': [100.0, 101.0, 102.0],
+                'Volume': [1000, 1000, 1000]
+            }, index=pd.to_datetime(['2023-01-01', '2023-01-02', '2023-01-03']))
 
-        assert prices1 == prices2
+            prices1 = fetch_price_history("CACHED_TICKER")
+            prices2 = fetch_price_history("CACHED_TICKER")
+            # yfinance should only be called once due to caching
+            mock_yf.Ticker.return_value.history.assert_called_once()
+
+            assert prices1 == prices2
+
+    def test_fetch_price_history_by_date_success(self):
+        with patch('src.AAVC_calculate_tool.data_loader.yf') as mock_yf:
+            mock_yf.Ticker.return_value.history.return_value = pd.DataFrame({
+                'Close': [100.0, 101.0, 102.0],
+                'Volume': [1000, 1000, 1000]
+            }, index=pd.to_datetime(['2023-01-01', '2023-01-02', '2023-01-03']))
+
+            prices, dates = fetch_price_history_by_date("AAPL", "2023-01-01", "2023-01-03")
+            assert prices == [100.0, 101.0, 102.0]
+            assert dates == ['2023-01-01', '2023-01-02', '2023-01-03']
+            mock_yf.Ticker.assert_called_with("AAPL")
+            mock_yf.Ticker.return_value.history.assert_called_with(
+                start="2023-01-01", end="2023-01-03")
+
+    def test_fetch_price_history_by_date_no_data(self):
+        with patch('src.AAVC_calculate_tool.data_loader.yf') as mock_yf:
+            mock_yf.Ticker.return_value.history.return_value = pd.DataFrame()  # Empty DataFrame
+            with pytest.raises(TickerNotFoundError) as excinfo:
+                fetch_price_history_by_date("AAPL", "2023-01-01", "2023-01-03")
+            assert "No data found for ticker 'AAPL' from 2023-01-01 to 2023-01-03." in str(excinfo.value)
+
+    def test_fetch_price_history_by_date_error(self):
+        with patch('src.AAVC_calculate_tool.data_loader.yf') as mock_yf:
+            mock_yf.Ticker.side_effect = Exception("API Limit")
+            with pytest.raises(DataFetchError) as excinfo:
+                fetch_price_history_by_date("AAPL", "2023-01-01", "2023-01-03")
+            assert "Failed to fetch data for 'AAPL' from 2023-01-01 to 2023-01-03: API Limit" in str(excinfo.value)

@@ -1,86 +1,193 @@
-"""
-Tests for the display module.
-"""
+from datetime import date
 
-import pytest
+from src.AAVC_calculate_tool.backtester import ComparisonResult, EnhancedBacktestResult
 from src.AAVC_calculate_tool.display import (
     format_currency,
-    format_percentage,
     format_decimal,
-    generate_summary_table
+    format_percentage,
+    generate_dynamic_summary_table,
 )
-from src.AAVC_calculate_tool.backtester import BacktestResult
 
 
 class TestDisplay:
     """Test cases for display module."""
-    
+
     def test_format_currency(self):
-        """Test currency formatting."""
-        assert format_currency(1000) == "¥1k"
-        assert format_currency(1500000) == "¥1.5M"
-        assert format_currency(500) == "¥500"
-    
+        assert format_currency(10000) == "\xa510k"
+        assert format_currency(1500000) == "\xa51.5M"
+        assert format_currency(1500000000) == "\xa51.5B"
+        assert format_currency(500) == "\xa5500"
+
     def test_format_percentage(self):
-        """Test percentage formatting."""
-        assert format_percentage(15.5) == "+15.5%"
+        assert format_percentage(10.5) == "+10.5%"
         assert format_percentage(-8.2) == "-8.2%"
         assert format_percentage(0.0) == "+0.0%"
-    
+
     def test_format_decimal(self):
-        """Test decimal formatting."""
-        assert format_decimal(1.234) == "1.23"
+        assert format_decimal(0.12345) == "0.12"
         assert format_decimal(0.567) == "0.57"
         assert format_decimal(2.0) == "2.00"
-    
-    def test_generate_summary_table(self):
-        """Test summary table generation."""
-        # Create mock results
-        mock_results = {
-            "AAVC": {
-                "final_value": 1500000.0,
-                "total_invested": 1000000.0,
-                "total_return": 50.0,
-                "annual_return": 25.0,
-                "max_drawdown": -15.0,
-                "volatility": 18.0,
-                "sharpe_ratio": 1.5,
-                "portfolio_history": [1000000.0, 1500000.0],
-                "dates": []
-            },
-            "DCA": {
-                "final_value": 1200000.0,
-                "total_invested": 1000000.0,
-                "total_return": 20.0,
-                "annual_return": 10.0,
-                "max_drawdown": -20.0,
-                "volatility": 22.0,
-                "sharpe_ratio": 0.8,
-                "portfolio_history": [1000000.0, 1200000.0],
-                "dates": []
-            },
-            "Buy & Hold": {
-                "final_value": 1100000.0,
-                "total_invested": 1000000.0,
-                "total_return": 10.0,
-                "annual_return": 5.0,
-                "max_drawdown": -25.0,
-                "volatility": 25.0,
-                "sharpe_ratio": 0.5,
-                "portfolio_history": [1000000.0, 1100000.0],
-                "dates": []
-            }
-        }
-        
-        table = generate_summary_table(
-            mock_results, "AAPL", "2023-01-01", "2024-01-01"
+        assert format_decimal(123.456, 3) == "123.456"
+
+    def test_generate_dynamic_summary_table_simple_mode(self):
+        # Create mock EnhancedBacktestResult objects
+        aavc_result = EnhancedBacktestResult(
+            algorithm_name="aavc",
+            final_value=120000.0,
+            total_invested=100000.0,
+            total_return=20.0,
+            annual_return=18.0,
+            max_drawdown=5.0,
+            volatility=10.0,
+            sharpe_ratio=1.5,
+            portfolio_history=[1, 2, 3],
+            investment_history=[1, 2, 3],
+            dates=[date(2023, 1, 1)],
+            metadata={}
         )
-        
-        assert "## Backtest Result: AAPL (2023-01-01 to 2024-01-01)" in table
+        dca_result = EnhancedBacktestResult(
+            algorithm_name="dca",
+            final_value=110000.0,
+            total_invested=100000.0,
+            total_return=10.0,
+            annual_return=9.0,
+            max_drawdown=3.0,
+            volatility=8.0,
+            sharpe_ratio=1.2,
+            portfolio_history=[1, 2, 3],
+            investment_history=[1, 2, 3],
+            dates=[date(2023, 1, 1)],
+            metadata={}
+        )
+        bnh_result = EnhancedBacktestResult(
+            algorithm_name="buy_and_hold",
+            final_value=130000.0,
+            total_invested=100000.0,
+            total_return=30.0,
+            annual_return=25.0,
+            max_drawdown=7.0,
+            volatility=12.0,
+            sharpe_ratio=1.8,
+            portfolio_history=[1, 2, 3],
+            investment_history=[1, 2, 3],
+            dates=[date(2023, 1, 1)],
+            metadata={}
+        )
+
+        mock_results = {
+            "aavc": aavc_result,
+            "dca": dca_result,
+            "buy_and_hold": bnh_result
+        }
+
+        # Create a mock ComparisonResult
+        mock_comparison_result = ComparisonResult(
+            results=mock_results,
+            summary={
+                "best_performer": "buy_and_hold",
+                "worst_performer": "dca",
+                "best_sharpe": "buy_and_hold",
+                "lowest_drawdown": "dca"
+            },
+            rankings={
+                "total_return": ["buy_and_hold", "aavc", "dca"],
+                "sharpe_ratio": ["buy_and_hold", "aavc", "dca"],
+                "max_drawdown": ["dca", "aavc", "buy_and_hold"],
+                "volatility": ["dca", "aavc", "buy_and_hold"]
+            },
+            correlations={
+                "aavc": {"aavc": 1.0, "dca": 0.8, "buy_and_hold": 0.7},
+                "dca": {"aavc": 0.8, "dca": 1.0, "buy_and_hold": 0.9},
+                "buy_and_hold": {"aavc": 0.7, "dca": 0.9, "buy_and_hold": 1.0}
+            }
+        )
+
+        table = generate_dynamic_summary_table(mock_comparison_result, mode="simple")
+
         assert "| Metric(指標)" in table
-        assert "| AAVC" in table
-        assert "| DCA" in table
-        assert "| Buy & Hold" in table
-        assert "¥1.5M" in table  # AAVC final value
-        assert "¥1.2M" in table  # DCA final value
-        assert "¥1.1M" in table  # Buy & Hold final value
+        assert "| aavc       | dca        | buy_and_hold |" in table
+        assert "| Final Value      | \xa5120k      | \xa5110k      | **\xa5130k**  |" in table
+        assert "| Ann. Return      | +18.0%     | +9.0%      | **+25.0%** |" in table
+        assert "| Max Drawdown     | +5.0%      | **+3.0%**  | +7.0%      |" in table
+        assert "| Sharpe Ratio     | 1.50       | 1.20       | **1.80**   |" in table
+
+    def test_generate_dynamic_summary_table_detailed_mode(self):
+        # Re-use mock_comparison_result from simple mode test
+        aavc_result = EnhancedBacktestResult(
+            algorithm_name="aavc",
+            final_value=120000.0,
+            total_invested=100000.0,
+            total_return=20.0,
+            annual_return=18.0,
+            max_drawdown=5.0,
+            volatility=10.0,
+            sharpe_ratio=1.5,
+            portfolio_history=[1, 2, 3],
+            investment_history=[1, 2, 3],
+            dates=[date(2023, 1, 1)],
+            metadata={}
+        )
+        dca_result = EnhancedBacktestResult(
+            algorithm_name="dca",
+            final_value=110000.0,
+            total_invested=100000.0,
+            total_return=10.0,
+            annual_return=9.0,
+            max_drawdown=3.0,
+            volatility=8.0,
+            sharpe_ratio=1.2,
+            portfolio_history=[1, 2, 3],
+            investment_history=[1, 2, 3],
+            dates=[date(2023, 1, 1)],
+            metadata={}
+        )
+        bnh_result = EnhancedBacktestResult(
+            algorithm_name="buy_and_hold",
+            final_value=130000.0,
+            total_invested=100000.0,
+            total_return=30.0,
+            annual_return=25.0,
+            max_drawdown=7.0,
+            volatility=12.0,
+            sharpe_ratio=1.8,
+            portfolio_history=[1, 2, 3],
+            investment_history=[1, 2, 3],
+            dates=[date(2023, 1, 1)],
+            metadata={}
+        )
+
+        mock_results = {
+            "aavc": aavc_result,
+            "dca": dca_result,
+            "buy_and_hold": bnh_result
+        }
+
+        mock_comparison_result = ComparisonResult(
+            results=mock_results,
+            summary={
+                "best_performer": "buy_and_hold",
+                "worst_performer": "dca",
+                "best_sharpe": "buy_and_hold",
+                "lowest_drawdown": "dca"
+            },
+            rankings={
+                "total_return": ["buy_and_hold", "aavc", "dca"],
+                "sharpe_ratio": ["buy_and_hold", "aavc", "dca"],
+                "max_drawdown": ["dca", "aavc", "buy_and_hold"],
+                "volatility": ["dca", "aavc", "buy_and_hold"]
+            },
+            correlations={
+                "aavc": {"aavc": 1.0, "dca": 0.8, "buy_and_hold": 0.7},
+                "dca": {"aavc": 0.8, "dca": 1.0, "buy_and_hold": 0.9},
+                "buy_and_hold": {"aavc": 0.7, "dca": 0.9, "buy_and_hold": 1.0}
+            }
+        )
+
+        table = generate_dynamic_summary_table(mock_comparison_result, mode="detailed")
+
+        assert "## Rankings" in table
+        assert "### Total Return" in table
+        assert "1. buy_and_hold" in table
+        assert "## Correlations" in table
+        assert "| Algorithm        | aavc       | dca        | buy_and_hold |" in table
+        assert "| aavc             | 1.00       | 0.80       | 0.70       |\n" in table

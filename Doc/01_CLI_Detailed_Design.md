@@ -36,19 +36,30 @@ python -m AAVC_calculate_tool calc --config <PATH_TO_CONFIG>
 
 ### 3.2. `backtest` サブコマンド
 
-バックテストを実行するためのコマンド。
+複数の投資アルゴリズムのパフォーマンスを比較するためのバックテストを実行するコマンド。
 
 **コマンド仕様:**
 ```bash
-# 単一銘柄モード
-python -m AAVC_calculate_tool backtest --ticker <TICKER> --start-date <DATE> --end-date <DATE> [options]
-
-# 設定ファイルモード
-python -m AAVC_calculate_tool backtest --config <PATH_TO_CONFIG> --start-date <DATE> --end-date <DATE> [options]
+python -m src.AAVC_calculate_tool backtest \
+  --ticker <TICKER> \
+  --start-date <YYYY-MM-DD> \
+  --end-date <YYYY-MM-DD> \
+  --amount <BASE_AMOUNT> \
+  [--algorithms <ALGO1,ALGO2,...>] \
+  [--algorithm-params <ALGO:PARAM=VAL,...>] \
+  [--compare-mode <simple|detailed>] \
+  [--plot]
 ```
-- `--ticker`と`--config`は相互排他的。
-- `--start-date`, `--end-date`は両モードで必須。
-- `[options]`には`--plot`フラグや、`--amount`等のAAVCパラメータを含む。
+
+- `--ticker`: 必須。バックテスト対象の銘柄のティッカーシンボル。
+- `--start-date`: 必須。バックテストの開始日（YYYY-MM-DD形式）。
+- `--end-date`: 必須。バックテストの終了日（YYYY-MM-DD形式）。
+- `--amount`: 必須。基準投資額。
+- `--algorithms`: オプション。比較するアルゴリズムのカンマ区切りリスト。指定しない場合、登録されている全てのアルゴリズムがデフォルトで実行されます。
+- `--algorithm-params`: オプション。アルゴリズム固有のパラメータを指定します。
+- `--compare-mode`: オプション。比較結果の表示モード（`simple` または `detailed`）。デフォルトは `simple` です。
+- `--plot`: オプション。比較チャートを生成し、ファイルに保存します。
+
 
 ## 4. 処理フロー
 
@@ -60,15 +71,9 @@ python -m AAVC_calculate_tool backtest --config <PATH_TO_CONFIG> --start-date <D
     b. (旧設計書4項の処理フローに沿って、日々の投資額計算を実行)
 3.  **`backtest`コマンドが指定された場合**:
     a. `backtest`用の引数をパースする。
-    b. **`--config`が指定されていれば (設定ファイルモード)**:
-        i. `config_loader.load_config`で設定ファイルを読み込む。
-        ii. `stocks`リストをループし、各`stock`に対して`backtester.run_comparison_backtest`を呼び出す。この際、CLI引数の`start-date`等を共通パラメータとして渡す。
-        iii. `display.generate_summary_table`で結果を整形し、銘柄ごとに出力する。
-    c. **`--ticker`が指定されていれば (単一銘柄モード)**:
-        i. CLI引数から`BacktestParams`オブジェクトを作成する。
-        ii. `backtester.run_comparison_backtest`を一度だけ呼び出す。
-        iii. 結果を整形して出力する。
-    d. `--plot`フラグがあれば、各バックテストの最後に`plotter.plot_comparison_chart`を呼び出す。
+    b. CLI引数から`ticker`, `start-date`, `end-date`, `amount`, `algorithms`, `algorithm-params`を抽出し、`backtester.run_comparison_backtest`を呼び出す。
+    c. `display.generate_dynamic_summary_table`で結果を整形して出力する。
+    d. `--plot`フラグがあれば、`plotter.plot_multi_algorithm_chart`を呼び出してチャートを生成する。
 
 ## 5. 基準価格の自動設定ロジック (変更なし)
 

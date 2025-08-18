@@ -10,8 +10,9 @@ A tool to calculate daily investment amounts based on the **Asymmetric Volatilit
 
 ## Features
 
-- **Core Calculation Engine**: Implements the AAVC algorithm.
+- **Core Calculation Engine**: Implements the AAVC algorithm and supports multiple investment algorithms.
 - **Command-Line Interface (CLI)**: Provides a 'calc' subcommand to calculate daily investment amounts.
+- **Algorithm Comparison Mode**: Allows comparison of results from multiple algorithms side-by-side.
 - **Automatic Data Acquisition**: Fetches the latest stock/fund data automatically using yfinance.
 - **Configuration Management**: Manages your portfolio and parameters via a simple YAML configuration file.
 - **Backtesting (Planned)**: Simulate and evaluate the strategy's performance on historical data.
@@ -103,6 +104,25 @@ python -m AAVC_calculate_tool calc --ticker "SPY" --amount 5000 --ref-price 400.
 
 # With custom log file
 python -m AAVC_calculate_tool calc --ticker "AAPL" --amount 10000 --log-file my_portfolio.csv
+```
+
+#### Multiple Algorithm Calculation and Comparison
+
+Calculate and compare investment amounts using multiple algorithms:
+
+```bash
+python -m AAVC_calculate_tool calc --ticker "SPY" --amount 10000 --algorithms AAVC,SMA --algorithm-params '{"SMA": {"period": 50}}' --compare-mode
+```
+
+**Options:**
+- `--algorithms`: Comma-separated list of algorithm names to use (e.g., `AAVC,SMA`)
+- `--algorithm-params`: JSON string of parameters for each algorithm (e.g., `'{"SMA": {"period": 50}}'`)
+- `--compare-mode`: Enable comparison output for multiple algorithms
+
+**Example:**
+```bash
+# Compare AAVC and SMA for SPY with custom SMA period
+python -m AAVC_calculate_tool calc --ticker "SPY" --amount 10000 --algorithms AAVC,SMA --algorithm-params '{"SMA": {"period": 50}}' --compare-mode
 ```
 
 #### Batch Calculation from Configuration File
@@ -204,6 +224,7 @@ The AAVC Calculate Tool provides comprehensive documentation to help users and d
 
 #### 🚀 Getting Started
 - **[Quick Start Guide](Doc/Quick_Start_Guide.md)** - Get up and running in minutes
+- **[AAVC Deep Dive Manual](Doc/AAVC_Deep_Dive_Manual.md)** - Comprehensive guide to the AAVC algorithm
 - **[README](README.md)** - Main project overview and user guide (this file)
 
 #### 📋 Specifications

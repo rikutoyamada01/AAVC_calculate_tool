@@ -5,26 +5,33 @@
 投資戦略の有効性を客観的に評価し、パラメータ調整の判断材料を提供することを目的とする。
 
 ## 4.2. 主要機能
-- 指定された銘柄と期間で、AAVC戦略の投資シミュレーションを実行する機能。
-- シミュレーション結果として、主要なパフォーマンス指標を表示する機能。
-- 比較対象として、同期間のドルコスト平均法やBuy & Hold戦略のパフォーマンスも算出する機能。
+- 指定された銘柄と期間で、複数の投資アルゴリズムのシミュレーションを実行し、パフォーマンスを比較する機能。
+- 各アルゴリズムのシミュレーション結果として、主要なパフォーマンス指標を表示する機能。
+- 比較対象のアルゴリズムをコマンドラインから選択できる機能。
 
-## 4.3. コマンド仕様（案）
+## 4.3. コマンド仕様
 
-### 単一銘柄のバックテスト
+### 複数アルゴリズム比較バックテスト
 ```bash
-python -m AAVC_calculate_tool backtest --ticker <TICKER_SYMBOL> --start-date <YYYY-MM-DD> --end-date <YYYY-MM-DD> [options]
+python -m src.AAVC_calculate_tool backtest \
+  --ticker <TICKER_SYMBOL> \
+  --start-date <YYYY-MM-DD> \
+  --end-date <YYYY-MM-DD> \
+  --amount <BASE_AMOUNT> \
+  [--algorithms <ALGO1,ALGO2,...>] \
+  [--algorithm-params <ALGO:PARAM=VAL,...>] \
+  [--compare-mode <simple|detailed>] \
+  [--plot]
 ```
-- `--ticker`: 必須。
-- `--start-date`, `--end-date`: 必須。バックテストの対象期間。
-- `[options]`: `--amount`, `--ref-price` などのパラメータを任意で指定。
+- `--ticker`, `-t`: 必須。バックテスト対象の銘柄のティッカーシンボル。
+- `--start-date`: 必須。バックテストの開始日（YYYY-MM-DD形式）。
+- `--end-date`: 必須。バックテストの終了日（YYYY-MM-DD形式）。
+- `--amount`, `-a`: 必須。基準投資額。
+- `--algorithms`: オプション。比較するアルゴリズムのカンマ区切りリスト。指定しない場合、登録されている全てのアルゴリズムがデフォルトで実行されます。
+- `--algorithm-params`: オプション。アルゴリズム固有のパラメータを指定します。
+- `--compare-mode`: オプション。比較結果の表示モード（`simple` または `detailed`）。デフォルトは `simple` です。
+- `--plot`: オプション。比較チャートを生成し、ファイルに保存します。
 
-### 設定ファイルに基づく一括バックテスト
-```bash
-python -m AAVC_calculate_tool backtest --config <PATH_TO_CONFIG> --start-date <YYYY-MM-DD> --end-date <YYYY-MM-DD>
-```
-- `--config`: 必須。`config.yaml`など設定ファイルのパスを指定する。
-- `--start-date`, `--end-date`: 必須。設定ファイル内の全銘柄に適用する共通のバックテスト期間。
 
 ## 4.4. パフォーマンス指標（案）
 - **最終資産評価額** (Final Portfolio Value)
@@ -33,9 +40,31 @@ python -m AAVC_calculate_tool backtest --config <PATH_TO_CONFIG> --start-date <Y
 - **最大ドローダウン** (Max Drawdown): 最高資産額からの最大下落率
 - **シャープレシオ** (Sharpe Ratio): リスク調整後リターン
 
-## 4.5. 出力形式（案）
-- コンソールへのサマリー表示。
-- （オプション）結果をグラフ（資産推移など）としてファイル出力する機能。
+## 4.5. 出力形式
+
+バックテストの結果は、比較対象のアルゴリズムのパフォーマンス指標をまとめた動的なサマリーテーブルとして表示されます。`--compare-mode detailed` を指定した場合は、ランキングや相関分析などの詳細情報も含まれます。
+
+また、`--plot` オプションを指定した場合は、ポートフォリオ価値の推移を比較するチャートが画像ファイルとして保存され、その保存パスが表示されます。
+
+**サマリーテーブルの例 (simple モード):**
+
+```
+| Metric(指標)     | aavc       | dca        | buy_and_hold |
+|:-----------------|:----------|:----------|:----------|
+| Final Value      | ¥120,000   | ¥115,000   | **¥130,000** |
+| Ann. Return      | +15.0%     | +12.0%     | **+20.0%** |
+| Total Return     | +20.0%     | +18.0%     | **+25.0%** |
+| Max Drawdown     | 10.0%      | 8.0%       | **5.0%**   |
+| Volatility(Ann.) | 12.0%      | 10.0%      | **8.0%**   |
+| Sharpe Ratio     | 1.20       | 1.10       | **1.50**   |
+| Total Invested   | ¥100,000   | ¥100,000   | ¥100,000   |
+```
+
+**チャート出力の例:**
+
+```
+Chart saved to: /path/to/multi_algorithm_comparison_AAPL_2023-01-01_2024-01-01.png
+```
 
 ## 4.6. 考慮事項
 - 配当や株式分割の考慮。
