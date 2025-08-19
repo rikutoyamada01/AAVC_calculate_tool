@@ -92,6 +92,7 @@ python -m AAVC_calculate_tool calc --ticker "GOOG" --amount 5000 --asymmetric-co
 - `--amount 5000`: 基準投資額を5000 JPYに設定します。
 - `--asymmetric-coefficient 2.5`: AAVCアルゴリズムの非対称係数を2.5に設定します。
 - `--max-multiplier 4.0`: AAVCアルゴリズムの最大投資額の基準額に対する倍率を4.0に設定します。
+- `--ref-ma-period 50`: 基準価格として50日移動平均を使用します。
 
 ### S&P 500指数を用いた現実的な例
 

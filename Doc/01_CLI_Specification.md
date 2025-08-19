@@ -26,6 +26,7 @@ python -m src.AAVC_calculate_tool calc --ticker <TICKER_SYMBOL> --amount <BASE_A
 - `--ref-price`, `-r`: オプション。基準価格。指定しない場合は、過去のデータから自動で設定されます。
 - `--asymmetric-coefficient`: オプション。AAVC計算の非対称性係数（デフォルト: 2.0）。
 - `--max-multiplier`: オプション。AAVC計算の最大投資額の基準額に対する倍率（デフォルト: 3.0）。
+- `--ref-ma-period`: オプション。基準価格として使用する移動平均の期間（デフォルト: 200）。
 - `--log-file`: オプション。投資ログを記録するCSVファイルのパス（デフォルト: `investment_log.csv`）。
 - `--algorithms`: オプション。使用するアルゴリズムのカンマ区切りリスト（例: `AAVC,SMA`）。指定しない場合、デフォルトのアルゴリズム（AAVC）が使用されます。
 - `--algorithm-params`: オプション。アルゴリズム固有のパラメータをJSON形式で指定します（例: `'{"SMA": {"period": 50}}'`）。

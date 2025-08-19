@@ -303,6 +303,12 @@ def run_comparison_backtest(
             algorithm_name, base_parameters
         )
 
+        # Buy & Holdの場合、DCAの総投資額を初期投資額として使用
+        if algorithm_name == "buy_and_hold" and "dca" in results:
+            dca_total_invested = results["dca"].total_invested
+            # Ensure initial_amount is set for Buy & Hold
+            algo_specific_params["initial_amount"] = dca_total_invested if dca_total_invested > 0 else algo_specific_params.get("initial_amount", 100000.0)
+
         # パラメータの妥当性を検証
         if not algorithm.validate_parameters(algo_specific_params):
             raise ValueError(f"Invalid parameters for algorithm '{algorithm_name}'.")

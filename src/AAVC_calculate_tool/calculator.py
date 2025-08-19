@@ -18,12 +18,16 @@ class AAVCStrategy(BaseAlgorithm):
             parameters={
                 "base_amount": {"type": "float", "default": 5000,
                                 "description": "基準投資額"},
-                "reference_price": {"type": "float", "default": None,
-                                    "description": "基準価格"},
+                "ref_price": {"type": "float", "default": None,
+                              "description": "基準価格"},
                 "asymmetric_coefficient": {"type": "float", "default": 2.0,
                                            "description": "非対称性係数"},
                 "max_investment_multiplier": {"type": "float", "default": 3.0,
                                               "description": "最大投資額の基準額に対する倍率"},
+                "reference_price_ma_factor": {"type": "float", "default": 1.0,
+                                              "description": "移動平均基準価格に乗算する係数"},
+                "reference_price_ma_period": {"type": "int", "default": 200,
+                                              "description": "基準価格として使用する移動平均の期間"},
             },
             category="value_averaging"
         )
@@ -36,18 +40,31 @@ class AAVCStrategy(BaseAlgorithm):
         parameters: Dict[str, Any]
     ) -> float:
         base_amount = parameters.get("base_amount", 5000.0)
-        reference_price = parameters.get("reference_price")
-        if reference_price is None:
-            if price_history:
-                reference_price = price_history[0]
-            else:
-                reference_price = current_price # Fallback if no history
+        reference_price = parameters.get("ref_price")
         asymmetric_coefficient = parameters.get("asymmetric_coefficient", 2.0)
         max_investment_multiplier = parameters.get("max_investment_multiplier", 3.0)
+        reference_price_ma_factor = parameters.get("reference_price_ma_factor", 1.0)
+        reference_price_ma_period = parameters.get("reference_price_ma_period", 200)
 
         # --- 1. 株価の確認 ---
         if not price_history:
             return 0.0  # 株価データがない場合は0を返す
+
+        # 動的な基準価格の計算
+        if reference_price is not None: # Fixed ref_price takes precedence
+            calculated_reference_price = reference_price
+        elif len(price_history) >= reference_price_ma_period:
+            # 移動平均を計算
+            ma_prices = price_history[-reference_price_ma_period:]
+            calculated_reference_price = np.mean(ma_prices) * reference_price_ma_factor
+        # それも不可能であれば、その他のフォールバックロジック
+        elif price_history: # Fallback to first price in history if no fixed ref price
+            calculated_reference_price = price_history[0]
+        else: # Fallback to current price if no history and no fixed ref price
+            calculated_reference_price = current_price
+
+        # Use the calculated_reference_price as the actual reference_price for AAVC logic
+        reference_price = calculated_reference_price
 
         # --- 2. ボラティリティの計算 ---
         if len(price_history) < 2:

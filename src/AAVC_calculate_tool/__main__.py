@@ -4,6 +4,13 @@ import sys
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
+# Set matplotlib backend to 'Agg' for non-interactive plotting
+import matplotlib
+matplotlib.use('Agg')
+
+# Set default encoding for stdout to UTF-8 for consistent console output
+sys.stdout.reconfigure(encoding='utf-8')
+
 from .backtester import ComparisonResult, run_comparison_backtest
 from .calculator import AAVCStrategy  # For calc command, still uses the direct function
 from .config_loader import (
@@ -40,7 +47,7 @@ def parse_algorithm_parameters(param_string: str) -> Dict[str, Dict[str, Any]]:
             continue
 
         algorithm_name, params_inner_str = param_group_str.split(":", 1)
-        algorithm_name = algorithm_name.strip()
+        algorithm_name = algorithm_name.strip().strip('""')
 
         if algorithm_name not in algorithm_params:
             algorithm_params[algorithm_name] = {}
@@ -52,8 +59,8 @@ def parse_algorithm_parameters(param_string: str) -> Dict[str, Dict[str, Any]]:
                 continue
 
             param_name, param_value_str = param_assignment.split("=", 1)
-            param_name = param_name.strip()
-            param_value_str = param_value_str.strip()
+            param_name = param_name.strip().strip('""')
+            param_value_str = param_value_str.strip().strip('""')
 
             try:
                 if "." in param_value_str:
@@ -106,6 +113,10 @@ def main():
     calc_parser.add_argument(
         "--max-multiplier", type=float,
         help="Maximum investment multiplier for AAVC calculation (default: 3.0)."
+    )
+    calc_parser.add_argument(
+        "--ref-ma-period", type=int,
+        help="Period for moving average reference price (default: 200)."
     )
 
     # --- 'backtest' subcommand ---
@@ -179,6 +190,8 @@ def handle_calc_command(args):
                 aavc_params["asymmetric_coefficient"] = args.asymmetric_coefficient
             if args.max_multiplier is not None:
                 aavc_params["max_investment_multiplier"] = args.max_multiplier
+            if args.ref_ma_period is not None:
+                aavc_params["reference_price_ma_period"] = args.ref_ma_period
 
             calculated_amount = aavc_strategy_instance.calculate_investment(
                 current_price=price_path[-1],
@@ -223,6 +236,7 @@ def handle_calc_command(args):
                 ref_price = job.get("reference_price")
                 asymmetric_coefficient = job.get("asymmetric_coefficient")
                 max_investment_multiplier = job.get("max_investment_multiplier")
+                reference_price_ma_period = job.get("reference_price_ma_period")
 
                 try:
                     price_path = fetch_price_history(ticker)
@@ -239,6 +253,8 @@ def handle_calc_command(args):
                         aavc_params["asymmetric_coefficient"] = asymmetric_coefficient
                     if max_investment_multiplier is not None:
                         aavc_params["max_investment_multiplier"] = max_investment_multiplier
+                    if reference_price_ma_period is not None:
+                        aavc_params["reference_price_ma_period"] = reference_price_ma_period
 
                     calculated_amount = aavc_strategy_instance.calculate_investment(
                         current_price=price_path[-1],
