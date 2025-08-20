@@ -6,10 +6,10 @@ from AAVC_calculate_tool.minus_five_percent_rule import MinusFivePercentRuleStra
 def initialize_registry() -> AlgorithmRegistry:
     """アルゴリズムレジストリを初期化し、デフォルトのアルゴリズムを登録する"""
     registry = AlgorithmRegistry()
-    registry.register(AAVCStrategy())
-    registry.register(DCAStrategy())
-    registry.register(BuyAndHoldStrategy())
-    registry.register(MinusFivePercentRuleStrategy())
+    registry.register(AAVCStrategy)
+    registry.register(DCAStrategy)
+    registry.register(BuyAndHoldStrategy)
+    registry.register(MinusFivePercentRuleStrategy)
     return registry
 
 

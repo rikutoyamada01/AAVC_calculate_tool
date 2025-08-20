@@ -1,4 +1,4 @@
-ほかの# Gemini Agent Guide for AAVC Calculate Tool
+# Gemini Agent Guide for AAVC Calculate Tool
 
 This document provides guidance for the Gemini agent on how to interact with the `AAVC_calculate_tool` project.
 

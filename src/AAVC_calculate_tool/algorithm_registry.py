@@ -60,22 +60,27 @@ class AlgorithmRegistry:
     """アルゴリズムレジストリ"""
 
     def __init__(self):
-        self._algorithms: Dict[str, InvestmentAlgorithm] = {}
+        self._algorithm_classes: Dict[str, type[InvestmentAlgorithm]] = {}
         self._metadata: Dict[str, AlgorithmMetadata] = {}
 
-    def register(self, algorithm: InvestmentAlgorithm) -> None:
-        """アルゴリズムを登録"""
-        metadata = algorithm.get_metadata()
-        self._algorithms[metadata.name] = algorithm
+    def register(self, algorithm_class: type[InvestmentAlgorithm]) -> None:
+        """アルゴリズムクラスを登録"""
+        # メタデータ取得のために一時的にインスタンス化
+        temp_instance = algorithm_class()
+        metadata = temp_instance.get_metadata()
+        self._algorithm_classes[metadata.name] = algorithm_class
         self._metadata[metadata.name] = metadata
 
     def get_algorithm(self, name: str) -> Optional[InvestmentAlgorithm]:
-        """アルゴリズムを取得"""
-        return self._algorithms.get(name)
+        """アルゴリズムの新しいインスタンスを取得"""
+        algorithm_class = self._algorithm_classes.get(name)
+        if algorithm_class:
+            return algorithm_class()  # 毎回新しいインスタンスを返す
+        return None
 
     def list_algorithms(self) -> List[str]:
         """登録済みアルゴリズムの一覧を取得"""
-        return list(self._algorithms.keys())
+        return list(self._algorithm_classes.keys())
 
     def get_metadata(self, name: str) -> Optional[AlgorithmMetadata]:
         """アルゴリズムのメタデータを取得"""
