@@ -78,6 +78,46 @@ Available subcommands:
 - `calc`: Calculate investment amounts
 - `backtest`: Run backtesting (planned feature)
 
+### Run Backtesting
+
+Run a backtest comparison for AAVC, DCA, and Buy & Hold strategies.
+
+```bash
+python -m AAVC_calculate_tool backtest \
+  --ticker <TICKER_SYMBOL> \
+  --start-date <YYYY-MM-DD> \
+  --end-date <YYYY-MM-DD> \
+  --amount <BASE_AMOUNT> \
+  [--algorithms <ALGO1,ALGO2,...>] \
+  [--algorithm-params <ALGO:PARAM=VAL,...>] \
+  [--compare-mode <simple|detailed>] \
+  [--plot] \
+  [--investment-frequency <daily|monthly>]
+```
+
+**Options:**
+- `--ticker, -t`: Required. Ticker symbol for backtest.
+- `--start-date`: Required. Start date for backtest (YYYY-MM-DD).
+- `--end-date`: Required. End date for backtest (YYYY-MM-DD).
+- `--amount, -a`: Required. Base investment amount.
+- `--algorithms`: Optional. Comma-separated list of algorithms to compare (e.g., `aavc,dca,buy_and_hold`). Defaults to all registered algorithms.
+- `--algorithm-params`: Optional. Algorithm-specific parameters (e.g., `aavc:ref_price=100,dca:base_amount=200`).
+- `--compare-mode`: Optional. Comparison display mode (`simple` or `detailed`). Default is `simple`.
+- `--plot`: Optional. Generate and save comparison chart.
+- `--investment-frequency`: Optional. Investment frequency (`daily` or `monthly`). Default is `monthly`.
+
+**Examples:**
+```bash
+# Basic backtest for AAPL
+python -m AAVC_calculate_tool backtest --ticker "AAPL" --start-date "2020-01-01" --end-date "2023-12-31" --amount 10000
+
+# Backtest with specific algorithms and detailed comparison
+python -m AAVC_calculate_tool backtest --ticker "MSFT" --start-date "2021-01-01" --end-date "2024-01-01" --amount 5000 --algorithms aavc,dca --compare-mode detailed
+
+# Backtest with plotting and daily investment frequency
+python -m AAVC_calculate_tool backtest --ticker "GOOGL" --start-date "2022-01-01" --end-date "2023-06-30" --amount 20000 --plot --investment-frequency daily
+```
+
 ### Calculate Investment Amounts
 
 #### Single Stock Calculation
@@ -93,6 +133,7 @@ python -m AAVC_calculate_tool calc --ticker "AAPL" --amount 10000
 - `--amount, -a`: Base investment amount (required)
 - `--ref-price, -r`: Reference price (optional, uses oldest historical price if not specified)
 - `--log-file`: Custom log file path (optional, defaults to `investment_log.csv`)
+- `--ref-ma-period`: Period for moving average reference price (optional, defaults to 200)
 
 **Examples:**
 ```bash

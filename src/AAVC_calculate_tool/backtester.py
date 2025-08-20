@@ -75,6 +75,7 @@ def _run_single_algorithm_backtest(
         portfolio_value = shares_owned * price
         portfolio_history.append(portfolio_value)
         investment_history.append(investment_amount)
+        
 
     # パフォーマンス指標を計算
     performance_metrics = _calculate_performance_metrics(
@@ -101,26 +102,56 @@ def _calculate_performance_metrics(
     final_value = portfolio_history[-1] if portfolio_history else 0
     total_invested = sum(investment_history)
 
+    # Handle cases where no investment was made or portfolio value is constant/zero
+    if total_invested == 0 or len(portfolio_history) < 2:
+        return {
+            "final_value": final_value,
+            "total_invested": total_invested,
+            "total_return": 0.0,
+            "annual_return": 0.0,
+            "max_drawdown": 0.0,
+            "volatility": 0.0,
+            "sharpe_ratio": 0.0
+        }
+
     # 収益率の計算
-    total_return = ((final_value / total_invested - 1) * 100) if total_invested > 0 else 0
+    total_return = 0.0
+    if total_invested > 0:
+        total_return = ((final_value / total_invested - 1) * 100)
 
     # 年率収益率の計算
     years = (dates[-1] - dates[0]).days / 365.25 if len(dates) > 1 else 0
-    annual_return = ((final_value / total_invested) ** (1/years) - 1) * 100 \
-        if years > 0 and total_invested > 0 else 0
+    annual_return = 0.0
+    if years > 0 and total_invested > 0:
+        # 負の数に対するべき乗計算を避ける
+        if (final_value / total_invested) >= 0:
+            annual_return = ((final_value / total_invested) ** (1/years) - 1) * 100
 
     # 最大下落率の計算
     max_drawdown = _calculate_max_drawdown(portfolio_history)
 
     # ボラティリティの計算
-    returns = np.diff(np.log(portfolio_history)) if len(portfolio_history) > 1 else [0]
-    volatility = np.std(returns) * np.sqrt(252) * 100 if returns.size > 0 else 0
+    # returns = np.diff(np.log(portfolio_history)) if len(portfolio_history) > 1 else [0]
+    
+    # ログリターンの代わりに単純リターンを計算
+    returns = []
+    for i in range(1, len(portfolio_history)):
+        if portfolio_history[i-1] != 0:
+            returns.append((portfolio_history[i] - portfolio_history[i-1]) / portfolio_history[i-1])
+        else:
+            returns.append(0.0)
+    returns = np.array(returns)
+    
+    volatility = 0.0
+    if returns.size > 0:
+        volatility = np.std(returns) * np.sqrt(252) * 100
 
     # シャープレシオの計算
     risk_free_rate = 0.02  # 仮の無リスク金利
     excess_returns = np.array(returns) - risk_free_rate/252
-    sharpe_ratio = np.mean(excess_returns) / np.std(excess_returns) * np.sqrt(252) \
-        if np.std(excess_returns) > 0 else 0
+    sharpe_ratio = 0.0
+    if np.std(excess_returns) > 0:
+        sharpe_ratio = np.mean(excess_returns) / np.std(excess_returns) * np.sqrt(252)
 
     return {
         "final_value": final_value,
@@ -144,7 +175,11 @@ def _calculate_max_drawdown(portfolio_history: List[float]) -> float:
     for value in portfolio_history:
         if value > peak:
             peak = value
-        drawdown = (peak - value) / peak
+        # peakが0の場合のゼロ除算を避ける
+        if peak == 0:
+            drawdown = 0.0
+        else:
+            drawdown = (peak - value) / peak
         max_dd = max(max_dd, drawdown)
 
     return max_dd * 100

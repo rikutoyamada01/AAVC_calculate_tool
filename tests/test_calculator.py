@@ -22,7 +22,7 @@ class TestAAVCStrategy:
         # Scenario where price increases, investment should decrease or be zero
         price_history = [100.0, 105.0, 110.0]
         dates = [date(2023, 1, 1), date(2023, 1, 2), date(2023, 1, 3)]
-        params = {**self.base_params, "reference_price": 100.0}
+        params = {**self.base_params, "reference_price": 100.0, "investment_frequency": "daily"}
 
         calculated_amount = self.strategy.calculate_investment(
             current_price=110.0, price_history=price_history, date_history=dates,
@@ -36,7 +36,7 @@ class TestAAVCStrategy:
         # Scenario where price drops, investment should increase
         price_history = [100.0, 95.0, 90.0]
         dates = [date(2023, 1, 1), date(2023, 1, 2), date(2023, 1, 3)]
-        params = {**self.base_params, "reference_price": 100.0}
+        params = {**self.base_params, "reference_price": 100.0, "investment_frequency": "daily"}
 
         calculated_amount = self.strategy.calculate_investment(
             current_price=90.0, price_history=price_history, date_history=dates,
@@ -50,7 +50,7 @@ class TestAAVCStrategy:
         # Scenario where price is same as reference, should be base_amount
         price_history = [100.0, 100.0, 100.0]
         dates = [date(2023, 1, 1), date(2023, 1, 2), date(2023, 1, 3)]
-        params = {**self.base_params, "reference_price": 100.0}
+        params = {**self.base_params, "reference_price": 100.0, "investment_frequency": "daily"}
 
         calculated_amount = self.strategy.calculate_investment(
             current_price=100.0, price_history=price_history, date_history=dates,
@@ -62,7 +62,7 @@ class TestAAVCStrategy:
         # Scenario where calculation would yield negative, but capped at 0
         price_history = [100.0, 150.0, 200.0]  # Large price increase
         dates = [date(2023, 1, 1), date(2023, 1, 2), date(2023, 1, 3)]
-        params = {**self.base_params, "reference_price": 100.0}
+        params = {**self.base_params, "reference_price": 100.0, "investment_frequency": "daily"}
 
         calculated_amount = self.strategy.calculate_investment(
             current_price=200.0, price_history=price_history, date_history=dates,
@@ -74,7 +74,7 @@ class TestAAVCStrategy:
         # Scenario where calculation would exceed 3x base_amount, capped
         price_history = [100.0, 50.0, 20.0]  # Large price drop
         dates = [date(2023, 1, 1), date(2023, 1, 2), date(2023, 1, 3)]
-        params = {**self.base_params, "reference_price": 100.0}
+        params = {**self.base_params, "reference_price": 100.0, "investment_frequency": "daily"}
 
         calculated_amount = self.strategy.calculate_investment(
             current_price=20.0, price_history=price_history, date_history=dates,
@@ -86,7 +86,7 @@ class TestAAVCStrategy:
         # Empty price path should return 0
         price_history = []
         dates = []
-        params = {**self.base_params, "reference_price": 100.0}
+        params = {**self.base_params, "reference_price": 100.0, "investment_frequency": "daily"}
 
         calculated_amount = self.strategy.calculate_investment(
             current_price=100.0, price_history=price_history, date_history=dates,
@@ -98,7 +98,7 @@ class TestAAVCStrategy:
         # Single price in path, volatility should be 0
         price_history = [100.0]
         dates = [date(2023, 1, 1)]
-        params = {**self.base_params, "reference_price": 100.0}
+        params = {**self.base_params, "reference_price": 100.0, "investment_frequency": "daily"}
 
         calculated_amount = self.strategy.calculate_investment(
             current_price=100.0, price_history=price_history, date_history=dates,

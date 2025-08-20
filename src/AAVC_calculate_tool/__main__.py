@@ -8,8 +8,10 @@ from typing import Any, Dict, List, Optional
 import matplotlib
 matplotlib.use('Agg')
 
-# Set default encoding for stdout to UTF-8 for consistent console output
-sys.stdout.reconfigure(encoding='utf-8')
+# Set default encoding for stdout to UTF-8 for consistent console output (compatible with older Python versions)
+import io
+if sys.stdout.encoding.lower() != "utf-8":
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
 
 from .backtester import ComparisonResult, run_comparison_backtest
 from .calculator import AAVCStrategy  # For calc command, still uses the direct function
@@ -152,6 +154,12 @@ def main():
     )
     backtest_parser.add_argument("--plot", action="store_true",
                                  help="Generate and save comparison chart.")
+    backtest_parser.add_argument(
+        "--investment-frequency",
+        choices=["daily", "monthly"],
+        default="monthly",
+        help="Investment frequency (default: monthly)."
+    )
 
     args = parser.parse_args()
 
@@ -348,6 +356,18 @@ def handle_backtest_command(args):
             comparison_result, mode=args.compare_mode
         )
         print(summary_table)
+
+        # --- Add custom output for AAVC investment details ---
+        if "aavc" in comparison_result.results:
+            aavc_result = comparison_result.results["aavc"]
+            actual_max_investment = max(aavc_result.investment_history) if aavc_result.investment_history else 0
+            actual_total_invested = sum(aavc_result.investment_history)
+
+            print(f"\n--- AAVC Investment Details ---")
+            print(f"Actual Max Single Period Investment (AAVC): JPY {actual_max_investment:.0f}")
+            print(f"Actual Total Invested (AAVC): JPY {actual_total_invested:.0f}")
+            print(f"-------------------------------")
+        # --- End custom output ---
 
         # Generate chart if requested
         if args.plot:

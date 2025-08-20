@@ -23,10 +23,12 @@ python -m src.AAVC_calculate_tool calc --ticker <TICKER_SYMBOL> --amount <BASE_A
 
 - `--ticker`, `-t`: 必須。計算対象の銘柄のティッカーシンボル（例: "AAPL", "7203.T"）。
 - `--amount`, `-a`: 必須。基準投資額（例: 10000）。
-- `--ref-price`, `-r`: オプション。基準価格。指定しない場合は、過去のデータから自動で設定されます。
+- `--ref-price`, `-r`: オプション。基準価格。指定しない場合は、動的基準価格が使用されます。
 - `--asymmetric-coefficient`: オプション。AAVC計算の非対称性係数（デフォルト: 2.0）。
 - `--max-multiplier`: オプション。AAVC計算の最大投資額の基準額に対する倍率（デフォルト: 3.0）。
-- `--ref-ma-period`: オプション。基準価格として使用する移動平均の期間（デフォルト: 200）。
+- `--dynamic-ref-price-enabled`: オプション。動的基準価格を有効にするか（デフォルト: True）。
+- `--ref-price-reset-threshold`: オプション。基準価格をリセットするしきい値（デフォルト: 2.0）。
+- `--ref-price-reset-factor`: オプション。リセット時の新しい基準価格の係数（デフォルト: 0.8）。
 - `--log-file`: オプション。投資ログを記録するCSVファイルのパス（デフォルト: `investment_log.csv`）。
 - `--algorithms`: オプション。使用するアルゴリズムのカンマ区切りリスト（例: `AAVC,SMA`）。指定しない場合、デフォルトのアルゴリズム（AAVC）が使用されます。
 - `--algorithm-params`: オプション。アルゴリズム固有のパラメータをJSON形式で指定します（例: `'{"SMA": {"period": 50}}'`）。
@@ -51,7 +53,8 @@ python -m src.AAVC_calculate_tool backtest \
   [--algorithms <ALGO1,ALGO2,...>] \
   [--algorithm-params <ALGO:PARAM=VAL,...>] \
   [--compare-mode <simple|detailed>] \
-  [--plot]
+  [--plot] 
+  [--investment-frequency <daily|monthly>]
 ```
 
 - `--ticker`, `-t`: 必須。バックテスト対象の銘柄のティッカーシンボル。

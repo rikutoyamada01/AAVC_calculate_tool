@@ -54,14 +54,24 @@ class TestInvestmentStrategies:
 
     def test_dca_strategy_calculate_investment(self):
         strategy = DCAStrategy()
-        price_history = [100.0, 101.0, 102.0]
-        dates = [date(2023, 1, 1), date(2023, 1, 2), date(2023, 1, 3)]
-        params = {"base_amount": 5000.0}
+        # 月の最初の取引日をシミュレート
+        price_history = [100.0]
+        dates = [date(2023, 1, 1)]
+        params = {"base_amount": 5000.0, "investment_frequency": "monthly"}
         investment = strategy.calculate_investment(
-            current_price=102.0, price_history=price_history, date_history=dates,
+            current_price=100.0, price_history=price_history, date_history=dates,
             parameters=params
         )
         assert investment == 5000.0
+
+        # 月の最初の取引日ではない場合
+        price_history_subsequent = [100.0, 101.0, 102.0]
+        dates_subsequent = [date(2023, 1, 1), date(2023, 1, 2), date(2023, 1, 3)]
+        investment_subsequent = strategy.calculate_investment(
+            current_price=102.0, price_history=price_history_subsequent, date_history=dates_subsequent,
+            parameters=params
+        )
+        assert investment_subsequent == 0.0
 
     def test_buy_and_hold_strategy_calculate_investment(self):
         strategy = BuyAndHoldStrategy()
@@ -138,7 +148,7 @@ class TestMultiAlgorithmBacktest:
             end_date_str="2023-01-10",
             base_parameters={
                 'base_amount': 10000.0,
-                'aavc': {'reference_price': 95.0, 'asymmetric_coefficient': 3.0}
+                'aavc': {'ref_price': 95.0, 'asymmetric_coefficient': 3.0}
             },
             algorithm_names=["aavc"]
         )
@@ -146,7 +156,7 @@ class TestMultiAlgorithmBacktest:
         assert isinstance(result, ComparisonResult)
         assert "aavc" in result.results
         aavc_result = result.results["aavc"]
-        assert aavc_result.metadata['reference_price'] == 95.0
+        assert aavc_result.metadata['ref_price'] == 95.0
         assert aavc_result.metadata['asymmetric_coefficient'] == 3.0
 
     def test_run_comparison_backtest_no_price_data(self):
@@ -182,7 +192,7 @@ class TestMultiAlgorithmBacktest:
             ticker="TEST",
             start_date_str="2023-01-01",
             end_date_str="2023-01-05",
-            base_parameters={'base_amount': 100.0},
+            base_parameters={'base_amount': 100.0, 'investment_frequency': 'daily'},
             algorithm_names=["dca"]
         )
         dca_result = result.results["dca"]

@@ -45,9 +45,11 @@ def mock_dependencies():
         mock_comparison_result = MagicMock(spec=ComparisonResult)
         mock_comparison_result.results = {
             "aavc": MagicMock(spec=EnhancedBacktestResult, final_value=12000.0,
-                              total_invested=10000.0, portfolio_history=[100, 200]),
+                              total_invested=10000.0, portfolio_history=[100, 200],
+                              investment_history=[10000.0]),
             "dca": MagicMock(spec=EnhancedBacktestResult, final_value=11000.0,
-                             total_invested=9000.0, portfolio_history=[100, 200]),
+                             total_invested=9000.0, portfolio_history=[100, 200],
+                             investment_history=[9000.0]),
         }
         mock_comparison_result.summary = {"best_performer": "aavc"}
         mock_comparison_result.rankings = {"total_return": ["aavc", "dca"]}
