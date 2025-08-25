@@ -7,7 +7,7 @@ class LogEntry(TypedDict):
     date: str
     ticker: str
     base_amount: float
-    reference_price: float
+    ref_price: float
     calculated_investment: float
 
 

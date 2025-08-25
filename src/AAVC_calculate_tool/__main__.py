@@ -239,7 +239,7 @@ def handle_calc_command(args):
             for job in jobs:
                 ticker = job["ticker"]
                 base_amount = job["base_amount"]
-                ref_price = job.get("reference_price")
+                ref_price = job.get("ref_price")
                 asymmetric_coefficient = job.get("asymmetric_coefficient")
                 max_investment_multiplier = job.get("max_investment_multiplier")
                 reference_price_ma_period = job.get("reference_price_ma_period")

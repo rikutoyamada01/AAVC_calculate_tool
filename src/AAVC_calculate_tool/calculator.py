@@ -192,7 +192,7 @@ class AAVCMovingAverageStrategy(BaseAAVCStrategy):
         if len(price_history) < window_size:
             return price_history[0] # データが足りない場合は初期価格
         
-        return np.mean(price_history[-window_size:])
+        return float(np.mean(price_history[-window_size:]))
 
 
 class AAVCHighestPriceResetStrategy(BaseAAVCStrategy):

@@ -19,7 +19,7 @@ class TestRecorder:
             "date": "2023-01-01",
             "ticker": "TEST",
             "base_amount": 10000.0,
-            "reference_price": 150.0,
+            "ref_price": 150.0,
             "calculated_investment": 10500.0
         }
         record_investment(log_entry, str(self.log_file))
@@ -30,7 +30,7 @@ class TestRecorder:
             lines = list(reader)
             assert len(lines) == 2  # Header + 1 data row
             assert lines[0] == ["date", "ticker", "base_amount",
-                                "reference_price", "calculated_investment"]
+                                "ref_price", "calculated_investment"]
             assert lines[1] == ["2023-01-01", "TEST", "10000.0",
                                 "150.0", "10500.0"]
 
@@ -40,7 +40,7 @@ class TestRecorder:
             "date": "2023-01-01",
             "ticker": "TEST1",
             "base_amount": 10000.0,
-            "reference_price": 150.0,
+            "ref_price": 150.0,
             "calculated_investment": 10500.0
         }
         record_investment(log_entry1, str(self.log_file))
@@ -50,7 +50,7 @@ class TestRecorder:
             "date": "2023-01-02",
             "ticker": "TEST2",
             "base_amount": 20000.0,
-            "reference_price": 250.0,
+            "ref_price": 250.0,
             "calculated_investment": 21000.0
         }
         record_investment(log_entry2, str(self.log_file))
@@ -60,7 +60,7 @@ class TestRecorder:
             lines = list(reader)
             assert len(lines) == 3  # Header + 2 data rows
             assert lines[0] == ["date", "ticker", "base_amount",
-                                "reference_price", "calculated_investment"]
+                                "ref_price", "calculated_investment"]
             assert lines[1] == ["2023-01-01", "TEST1", "10000.0",
                                 "150.0", "10500.0"]
             assert lines[2] == ["2023-01-02", "TEST2", "20000.0",
@@ -74,7 +74,7 @@ class TestRecorder:
                     "date": "2023-01-01",
                     "ticker": "TEST",
                     "base_amount": 10000.0,
-                    "reference_price": 100.0,
+                    "ref_price": 100.0,
                     "calculated_investment": 10000.0,
                 }
                 record_investment(log_entry, "test_log.csv") # Use a generic file name
