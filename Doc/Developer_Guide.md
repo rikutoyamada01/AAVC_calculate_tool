@@ -62,18 +62,28 @@ black src/
 
 #### 1. Calculator Module (`calculator.py`)
 
-**Purpose**: Implements the AAVC algorithm core logic.
+**Purpose**: Implements various AAVC and other investment strategy algorithms.
 
-**Key Functions**:
-- `calculate_aavc_investment()`: Main calculation function
-- `calculate_volatility()`: Volatility calculation
-- `calculate_asymmetric_adjustment()`: Asymmetric coefficient application
+**Key Concepts**:
+- **`BaseAAVCStrategy`**: An abstract base class defining the common interface for AAVC-like strategies. It handles general investment calculation logic, while delegating reference price determination to subclasses.
+- **`get_metadata()`**: Each strategy implements this to provide metadata like name, description, version, author, and configurable parameters.
+- **`_calculate_reference_price()`**: An abstract method in `BaseAAVCStrategy` that concrete AAVC subclasses must implement to define how their specific reference price is determined.
 
-**Algorithm Flow**:
-1. Calculate price deviation from reference
-2. Apply volatility adjustment
-3. Apply asymmetric coefficient
-4. Calculate final investment amount
+**Implemented Strategies**:
+- **`AAVCStaticStrategy`**: Uses a fixed or initial price as the reference.
+- **`AAVCDynamicStrategy`**: Dynamically resets the reference price when the current price rises significantly.
+- **`AAVCMovingAverageStrategy`**: Uses a moving average of historical prices as the reference.
+- **`AAVCHighestPriceResetStrategy`**: Resets the reference price based on a new highest price seen, scaled by a reset factor.
+- **`DCAStrategy`**: Implements Dollar Cost Averaging.
+- **`BuyAndHoldStrategy`**: Implements a simple Buy & Hold strategy.
+
+**Algorithm Flow (General for `BaseAAVCStrategy` subclasses)**:
+1. Determine investment day based on frequency.
+2. Calculate the strategy-specific reference price (delegated to subclass).
+3. Calculate volatility.
+4. Calculate deviation from the reference price.
+5. Apply asymmetric adjustment and volatility adjustment.
+6. Calculate final investment amount, applying caps (min 0, max multiplier).
 
 #### 2. Data Loader Module (`data_loader.py`)
 
@@ -224,31 +234,51 @@ pre-commit run --all-files
 4. **Add Tests**: Comprehensive test coverage
 5. **Update Documentation**: User and developer docs
 
-### 3. Example: Adding a New Calculation Method
+### 3. Example: Adding a New Investment Strategy
+
+To add a new investment strategy, you typically create a new class that inherits from `BaseAlgorithm` or `BaseAAVCStrategy` (for AAVC-like strategies).
 
 ```python
-# 1. Add new function to calculator.py
-def calculate_modified_aavc_investment(
-    price_path: List[float],
-    base_amount: float,
-    reference_price: float,
-    modification_factor: float = 1.0
-) -> float:
-    """Calculate investment using modified AAVC algorithm."""
-    # Implementation here
-    pass
+# 1. Create a new strategy class in calculator.py (or a new strategy file)
+from AAVC_calculate_tool.algorithm_registry import AlgorithmMetadata
+from AAVC_calculate_tool.calculator import BaseAAVCStrategy # or BaseAlgorithm
 
-# 2. Add CLI option in __main__.py
-calc_parser.add_argument(
-    "--method", 
-    choices=["standard", "modified"], 
-    default="standard",
-    help="Calculation method to use"
-)
+class MyNewStrategy(BaseAAVCStrategy):
+    def get_metadata(self) -> AlgorithmMetadata:
+        return AlgorithmMetadata(
+            name="my_new_strategy",
+            description="A brief description of my new strategy.",
+            version="1.0",
+            author="Your Name",
+            parameters={
+                "my_param": {"type": "float", "default": 1.0, "description": "A parameter for my strategy"},
+            },
+            category="custom"
+        )
 
-# 3. Add configuration option
-# 4. Add tests
-# 5. Update documentation
+    def _calculate_reference_price(
+        self,
+        current_price: float,
+        price_history: List[float],
+        parameters: Dict[str, Any]
+    ) -> float:
+        # Implement your reference price calculation logic here
+        # This method is only for BaseAAVCStrategy subclasses
+        pass
+
+    # If inheriting from BaseAlgorithm directly, implement calculate_investment instead
+    # def calculate_investment(...)
+
+# 2. Register the new strategy in plugin_loader.py
+#    Add MyNewStrategy to the import list and register it:
+#    registry.register(MyNewStrategy)
+
+# 3. (Optional) Add CLI options in __main__.py if specific arguments are needed
+#    Otherwise, parameters can be passed via --algorithm-params
+
+# 4. Add comprehensive unit tests in tests/test_calculator.py (or a new test file)
+
+# 5. Update documentation (this Developer Guide, CLI Specification, etc.)
 ```
 
 ## Performance Considerations

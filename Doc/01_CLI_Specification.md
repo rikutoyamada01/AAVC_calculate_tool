@@ -29,9 +29,10 @@ python -m src.AAVC_calculate_tool calc --ticker <TICKER_SYMBOL> --amount <BASE_A
 - `--dynamic-ref-price-enabled`: オプション。動的基準価格を有効にするか（デフォルト: True）。
 - `--ref-price-reset-threshold`: オプション。基準価格をリセットするしきい値（デフォルト: 2.0）。
 - `--ref-price-reset-factor`: オプション。リセット時の新しい基準価格の係数（デフォルト: 0.8）。
+- `--reset-factor`: オプション。最高値更新時の基準価格リセット係数（デフォルト: 0.85）。
 - `--log-file`: オプション。投資ログを記録するCSVファイルのパス（デフォルト: `investment_log.csv`）。
-- `--algorithms`: オプション。使用するアルゴリズムのカンマ区切りリスト（例: `AAVC,SMA`）。指定しない場合、デフォルトのアルゴリズム（AAVC）が使用されます。
-- `--algorithm-params`: オプション。アルゴリズム固有のパラメータをJSON形式で指定します（例: `'{"SMA": {"period": 50}}'`）。
+- `--algorithms`: オプション。使用するアルゴリズムのカンマ区切りリスト（例: `aavc_static,aavc_highest_reset,dca`）。指定しない場合、デフォルトのアルゴリズム（AAVC）が使用されます。
+- `--algorithm-params`: オプション。アルゴリズム固有のパラメータをJSON形式で指定します（例: `'aavc_highest_reset:reset_factor=0.9;aavc_static:ref_price=100'`）。
 - `--compare-mode`: オプション。比較モードを有効にし、各アルゴリズムの結果を並べて表示します。
 
 #### 設定ファイルを利用した計算

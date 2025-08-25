@@ -14,7 +14,7 @@ if sys.stdout.encoding.lower() != "utf-8":
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
 
 from .backtester import ComparisonResult, run_comparison_backtest
-from .calculator import AAVCStrategy  # For calc command, still uses the direct function
+from .calculator import AAVCStaticStrategy
 from .config_loader import (
     ConfigError,
     ConfigNotFoundError,
@@ -186,20 +186,18 @@ def handle_calc_command(args):
                 print(f"Error: No historical data found for {args.ticker}.")
                 sys.exit(1)
 
-            # Instantiate AAVCStrategy for single calculation
-            aavc_strategy_instance = AAVCStrategy()
+            # Instantiate AAVCStaticStrategy for single calculation
+            aavc_strategy_instance = AAVCStaticStrategy()
 
-            # Prepare parameters for AAVCStrategy
+            # Prepare parameters for AAVCStaticStrategy
             aavc_params = {
                 "base_amount": args.amount,
-                "reference_price": args.ref_price if args.ref_price is not None else price_path[0],
+                "ref_price": args.ref_price if args.ref_price is not None else price_path[0],
+                "asymmetric_coefficient": args.asymmetric_coefficient if args.asymmetric_coefficient is not None else 2.0,
+                "max_investment_multiplier": args.max_multiplier if args.max_multiplier is not None else 3.0,
+                "window_size": args.ref_ma_period if args.ref_ma_period is not None else 200,
+                "investment_frequency": "daily" # Assuming daily for single calc for simplicity
             }
-            if args.asymmetric_coefficient is not None:
-                aavc_params["asymmetric_coefficient"] = args.asymmetric_coefficient
-            if args.max_multiplier is not None:
-                aavc_params["max_investment_multiplier"] = args.max_multiplier
-            if args.ref_ma_period is not None:
-                aavc_params["reference_price_ma_period"] = args.ref_ma_period
 
             calculated_amount = aavc_strategy_instance.calculate_investment(
                 current_price=price_path[-1],
@@ -212,7 +210,7 @@ def handle_calc_command(args):
                 "date": datetime.now().strftime("%Y-%m-%d"),
                 "ticker": args.ticker,
                 "base_amount": args.amount,
-                "reference_price": aavc_params["reference_price"],
+                "ref_price": aavc_params["ref_price"],
                 "calculated_investment": calculated_amount,
             }
             try:
@@ -249,20 +247,18 @@ def handle_calc_command(args):
                 try:
                     price_path = fetch_price_history(ticker)
 
-                    # Instantiate AAVCStrategy for single calculation
-                    aavc_strategy_instance = AAVCStrategy()
+                    # Instantiate AAVCStaticStrategy for single calculation
+                    aavc_strategy_instance = AAVCStaticStrategy()
 
-                    # Prepare parameters for AAVCStrategy
+                    # Prepare parameters for AAVCStaticStrategy
                     aavc_params = {
                         "base_amount": base_amount,
-                        "reference_price": ref_price if ref_price is not None else price_path[0],
+                        "ref_price": ref_price if ref_price is not None else price_path[0],
+                        "asymmetric_coefficient": asymmetric_coefficient if asymmetric_coefficient is not None else 2.0,
+                        "max_investment_multiplier": max_investment_multiplier if max_investment_multiplier is not None else 3.0,
+                        "window_size": reference_price_ma_period if reference_price_ma_period is not None else 200,
+                        "investment_frequency": job.get("investment_frequency", "monthly")
                     }
-                    if asymmetric_coefficient is not None:
-                        aavc_params["asymmetric_coefficient"] = asymmetric_coefficient
-                    if max_investment_multiplier is not None:
-                        aavc_params["max_investment_multiplier"] = max_investment_multiplier
-                    if reference_price_ma_period is not None:
-                        aavc_params["reference_price_ma_period"] = reference_price_ma_period
 
                     calculated_amount = aavc_strategy_instance.calculate_investment(
                         current_price=price_path[-1],
@@ -275,7 +271,7 @@ def handle_calc_command(args):
                         "date": datetime.now().strftime("%Y-%m-%d"),
                         "ticker": ticker,
                         "base_amount": base_amount,
-                        "reference_price": aavc_params["reference_price"],
+                        "ref_price": aavc_params["ref_price"],
                         "calculated_investment": calculated_amount,
                     }
                     try:

@@ -323,7 +323,7 @@ def run_comparison_backtest(
 
     if algorithm_names is None or len(algorithm_names) == 0:
         # デフォルトアルゴリズム
-        algorithm_names = ["aavc", "dca", "buy_and_hold"]
+        algorithm_names = ["aavc_static", "aavc_dynamic", "aavc_ma", "dca", "buy_and_hold"]
 
     results = {}
 
