@@ -2,7 +2,7 @@ from datetime import date
 
 import pytest
 
-from src.AAVC_calculate_tool.calculator import AAVCStaticStrategy, AAVCHighestPriceResetStrategy
+from src.AAVC_calculate_tool.calculator import AAVCStaticStrategy, AAVCHighestPriceResetStrategy, AAVCHighestInHistoryStrategy
 
 
 class TestAAVCStaticStrategy:
@@ -216,3 +216,74 @@ class TestAAVCHighestPriceResetStrategy:
         )
         # Expect investment to be higher than base_amount as price is below reference
         assert calculated_amount > self.base_params["base_amount"]
+
+
+class TestAAVCHighestInHistoryStrategy:
+    """Test cases for the AAVCHighestInHistoryStrategy class."""
+
+    def setup_method(self):
+        self.strategy = AAVCHighestInHistoryStrategy()
+        self.base_params = {
+            "base_amount": 10000.0,
+            "asymmetric_coefficient": 2.0,
+            "max_investment_multiplier": 3.0,
+            "investment_frequency": "daily",
+            "reset_factor": 0.85
+        }
+
+    def test_get_metadata(self):
+        metadata = self.strategy.get_metadata()
+        assert metadata.name == "aavc_highest_in_history"
+        assert "AAVC with Reference Price based on Highest Price in Current History" in metadata.description
+        assert "reset_factor" in metadata.parameters
+
+    def test_calculate_reference_price_basic(self):
+        # Test with a simple history where max is at the end
+        price_history = [100.0, 105.0, 110.0]
+        params = {**self.base_params}
+        ref_price = self.strategy._calculate_reference_price(
+            current_price=110.0, price_history=price_history, parameters=params
+        )
+        assert ref_price == 110.0 * 0.85
+
+    def test_calculate_reference_price_max_in_middle(self):
+        # Test with max price in the middle of history
+        price_history = [100.0, 120.0, 110.0]
+        params = {**self.base_params}
+        ref_price = self.strategy._calculate_reference_price(
+            current_price=110.0, price_history=price_history, parameters=params
+        )
+        assert ref_price == 120.0 * 0.85
+
+    def test_calculate_reference_price_max_at_start(self):
+        # Test with max price at the start of history
+        price_history = [130.0, 110.0, 100.0]
+        params = {**self.base_params}
+        ref_price = self.strategy._calculate_reference_price(
+            current_price=100.0, price_history=price_history, parameters=params
+        )
+        assert ref_price == 130.0 * 0.85
+
+    def test_calculate_reference_price_empty_history(self):
+        # Test with empty history
+        price_history = []
+        params = {**self.base_params}
+        ref_price = self.strategy._calculate_reference_price(
+            current_price=0.0, price_history=price_history, parameters=params
+        )
+        assert ref_price == 0.0
+
+    def test_calculate_investment_basic(self):
+        # Test a full investment calculation
+        price_history = [100.0, 105.0, 110.0]
+        dates = [date(2023, 1, 1), date(2023, 1, 2), date(2023, 1, 3)]
+        params = {**self.base_params}
+
+        calculated_amount = self.strategy.calculate_investment(
+            current_price=110.0, price_history=price_history, date_history=dates,
+            parameters=params
+        )
+        # Expected reference price: 110.0 * 0.85 = 93.5
+        # Current price: 110.0. Price is above reference, so investment should be low/zero
+        assert calculated_amount < self.base_params["base_amount"]
+        assert calculated_amount >= 0.0

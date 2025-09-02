@@ -244,6 +244,42 @@ class AAVCHighestPriceResetStrategy(BaseAAVCStrategy):
         return current_effective_ref_price
 
 
+class AAVCHighestInHistoryStrategy(BaseAAVCStrategy):
+    """履歴内の最高値を基準価格とする戦略（永続性なし）"""
+
+    def get_metadata(self) -> AlgorithmMetadata:
+        return AlgorithmMetadata(
+            name="aavc_highest_in_history",
+            description="AAVC with Reference Price based on Highest Price in Current History (No Persistence)",
+            version="1.0",
+            author="AAVC Team",
+            parameters={
+                "base_amount": {"type": "float", "default": 5000, "description": "基準投資額"},
+                "asymmetric_coefficient": {"type": "float", "default": 2.0, "description": "非対称性係数"},
+                "max_investment_multiplier": {"type": "float", "default": 3.0, "description": "最大投資額の基準額に対する倍率"},
+                "investment_frequency": {"type": "str", "default": "monthly", "description": "投資頻度 (daily/monthly)"},
+                "reset_factor": {"type": "float", "default": 0.85, "description": "基準価格リセット係数 (最高値 * N)"},
+            },
+            category="value_averaging"
+        )
+
+    def _calculate_reference_price(
+        self,
+        current_price: float,
+        price_history: List[float],
+        parameters: Dict[str, Any]
+    ) -> float:
+        reset_factor = parameters.get("reset_factor", 0.85)
+
+        if not price_history:
+            return 0.0
+
+        highest_price_in_history = max(price_history)
+        
+        # The reference price is simply the highest price in the current history * reset_factor
+        return highest_price_in_history * reset_factor
+
+
 # --- Other Strategies (Unchanged) ---
 
 class DCAStrategy(BaseAlgorithm):
