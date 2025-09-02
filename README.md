@@ -15,6 +15,7 @@ A tool to calculate daily investment amounts based on the **Asymmetric Volatilit
 - **Algorithm Comparison Mode**: Allows comparison of results from multiple algorithms side-by-side.
 - **Automatic Data Acquisition**: Fetches the latest stock/fund data automatically using yfinance.
 - **Configuration Management**: Manages your portfolio and parameters via a simple YAML configuration file.
+- **Monthly Email Notifications**: Automatically calculates the investment amount for a pre-configured stock and sends a summary report to your email once a month. Requires setup.
 - **Backtesting (Planned)**: Simulate and evaluate the strategy's performance on historical data.
 
 ## Installation
@@ -306,6 +307,47 @@ The AAVC Calculate Tool provides comprehensive documentation to help users and d
 ### 📖 Complete Documentation Index
 
 For a complete overview of all available documentation, see the **[Documentation Index](Doc/Documentation_Index.md)**.
+
+## Troubleshooting
+
+## Feature: Monthly Email Notifications
+
+This tool includes a feature to automatically run a calculation once a month and send the results to you via email. This is powered by GitHub Actions and is useful for receiving timely investment information without needing to run the tool manually.
+
+### How to Enable and Configure
+
+To use this feature, you must configure several "Secrets" in your GitHub repository. This ensures that your sensitive information (like email passwords) is kept secure.
+
+**Step 1: Navigate to GitHub Secrets**
+
+1.  Go to your repository on GitHub.
+2.  Click on the **Settings** tab.
+3.  In the left sidebar, click **Secrets and variables** > **Actions**.
+4.  Click the **New repository secret** button for each of the secrets listed below.
+
+**Step 2: Add the Following Secrets**
+
+| Secret Name     | Description                                                                                                | Example                     |
+| :-------------- | :--------------------------------------------------------------------------------------------------------- | :-------------------------- |
+| `MAIL_SERVER`   | The address of your email provider's SMTP server.                                                          | `smtp.gmail.com`            |
+| `MAIL_PORT`     | The port for the SMTP server. TLS is recommended.                                                          | `587`                       |
+| `MAIL_USERNAME` | Your full email address, used to log in to the SMTP server.                                                | `your.email@gmail.com`      |
+| `MAIL_PASSWORD` | The password for your email account. **For Gmail, you must use an [App Password](https://support.google.com/accounts/answer/185833).** | `abdc efgh ijkl mnop`       |
+| `MAIL_TO`       | The email address where the notification should be sent.                                                   | `recipient.email@example.com` |
+
+**Note:** Without these secrets, the monthly action will fail.
+
+### Customization
+
+-   **Ticker and Amount**: The stock ticker and base investment amount can be changed by editing the configuration variables at the top of the `src/AAVC_calculate_tool/notification_sender.py` file. The defaults are `QQQ` and `$10,000`.
+-   **Schedule**: The schedule is defined in `.github/workflows/monthly_notification.yml` using a cron expression. The default is the 1st of every month.
+
+### Manual Testing
+
+After setting up the secrets, you can test the feature without waiting for the schedule:
+1. Go to the **Actions** tab in your GitHub repository.
+2. In the left sidebar, click on the **Monthly Investment Notification** workflow.
+3. Click the **Run workflow** dropdown, and then the **Run workflow** button. This will trigger the process manually.
 
 ## Troubleshooting
 
