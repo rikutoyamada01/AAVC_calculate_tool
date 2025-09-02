@@ -1,12 +1,12 @@
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 import sys
 
 # Add src directory to Python path to allow module imports
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from AAVC_calculate_tool.calculator import AAVCHighestInHistoryStrategy
-from AAVC_calculate_tool.data_loader import fetch_price_history, TickerNotFoundError, DataFetchError
+from AAVC_calculate_tool.data_loader import fetch_price_history_by_date, TickerNotFoundError, DataFetchError
 
 # --- Configuration ---
 TICKER = "SPY"       # S&P 500 ETF
@@ -20,10 +20,14 @@ def main():
     print(f"Starting calculation for ticker: {TICKER}")
 
     try:
-        # 1. Fetch historical price data
-        price_history = fetch_price_history(TICKER)
+        # Define date range for data fetching
+        end_date = datetime.utcnow().strftime('%Y-%m-%d')
+        start_date = (datetime.utcnow() - timedelta(days=365 * 2)).strftime('%Y-%m-%d') # Last 2 years
+
+        # 1. Fetch historical price data and dates
+        price_history, date_history = fetch_price_history_by_date(TICKER, start_date, end_date)
         if not price_history:
-            print(f"Error: No historical data found for {TICKER}.")
+            print(f"Error: No historical data found for {TICKER} in the specified date range.")
             sys.exit(1)
 
         # Debugging prints for price_history
@@ -51,7 +55,7 @@ def main():
         calculated_amount = strategy.calculate_investment(
             current_price=current_price,
             price_history=price_history,
-            date_history=[],  # Not strictly needed for this calculation
+            date_history=date_history,
             parameters=aavc_params
         )
 
