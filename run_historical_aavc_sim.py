@@ -9,6 +9,9 @@ import matplotlib.ticker as mticker
 from src.AAVC_calculate_tool.data_loader import fetch_price_history_by_date
 from src.AAVC_calculate_tool.calculator import (
     AAVCStaticStrategy,
+    AAVCDynamicStrategy,
+    AAVCMovingAverageStrategy,
+    AAVCHighestPriceResetStrategy,
     DCAStrategy,
     BuyAndHoldStrategy,
     BaseAlgorithm,
@@ -31,8 +34,9 @@ def run_strategy_simulation(
     
     if isinstance(strategy, BuyAndHoldStrategy):
         dca_base_amount = strategy_params.get("dca_base_amount", 1000.0)
-        num_investments = len(set(d.strftime("%Y-%m") for d in date_history))
-        strategy_params["initial_amount"] = dca_base_amount * num_investments
+        # Calculate the number of months between start and end dates
+        num_months = (date_history[-1].year - date_history[0].year) * 12 + date_history[-1].month - date_history[0].month + 1
+        strategy_params["initial_amount"] = dca_base_amount * num_months
 
     for i in range(len(price_history)):
         current_price = price_history[i]
@@ -51,7 +55,12 @@ def run_strategy_simulation(
 
     final_value = portfolio_history[-1] if portfolio_history else 0.0
     num_years = (date_history[-1] - date_history[0]).days / 365.25
-    annual_return = ((final_value / total_invested)**(1/num_years) - 1) * 100 if total_invested > 0 and num_years > 0 else 0.0
+    
+    # Handle cases where total_invested is zero or num_years is zero
+    if total_invested > 0 and num_years > 0:
+        annual_return = ((final_value / total_invested)**(1/num_years) - 1) * 100
+    else:
+        annual_return = 0.0
 
     return {
         "Strategy": strategy.get_metadata().name,
@@ -115,10 +124,13 @@ def run_historical_scenario(ticker: str, start_date: str, end_date: str, scenari
         return
 
     ref_price = price_history[0]
-    base_investment = 1000.0
+    base_investment = 1000.0 # Monthly investment for DCA and AAVC
 
     strategies_to_test = [
         (AAVCStaticStrategy(), {"ref_price": ref_price, "base_amount": base_investment, "investment_frequency": "monthly"}),
+        (AAVCDynamicStrategy(), {"ref_price": ref_price, "base_amount": base_investment, "investment_frequency": "monthly"}),
+        (AAVCMovingAverageStrategy(), {"base_amount": base_investment, "investment_frequency": "monthly"}),
+        (AAVCHighestPriceResetStrategy(), {"base_amount": base_investment, "investment_frequency": "monthly"}),
         (DCAStrategy(), {"base_amount": base_investment, "investment_frequency": "monthly"}),
         (BuyAndHoldStrategy(), {"dca_base_amount": base_investment, "investment_frequency": "monthly"}),
     ]
@@ -129,11 +141,11 @@ def run_historical_scenario(ticker: str, start_date: str, end_date: str, scenari
         results.append(result)
 
     # Print Results Table
-    print("| Strategy      | Final Value   | Total Invested | Ann. Return | Final Multiplier |")
-    print("|:--------------|:--------------|:---------------|:------------|:-----------------|")
+    print("| Strategy             | Final Value    | Total Invested | Ann. Return | Final Multiplier |")
+    print("|:---------------------|:---------------|:---------------|:------------|:-----------------|")
     for row in results:
-        print(f"| {row['Strategy']:<13} | ${row['Final Value']:<12,.0f} | ${row['Total Invested']:<13,.0f} | {row['Ann. Return']:<10.2f}% | {row['Final Multiplier']:<16.2f}x |")
-    print("--------------------------------------------------------------------------------")
+        print(f"| {row['Strategy']:<20} | ${row['Final Value']:<13,.0f} | ${row['Total Invested']:<14,.0f} | {row['Ann. Return']:<10.2f}% | {row['Final Multiplier']:<16.2f}x |")
+    print("--------------------------------------------------------------------------------------")
 
     # Plot results
     plot_scenario_results(date_history, price_history, results, scenario_name, ticker)
@@ -141,9 +153,7 @@ def run_historical_scenario(ticker: str, start_date: str, end_date: str, scenari
 if __name__ == "__main__":
     TICKER = "^GSPC"
     scenarios = {
-        "Uptrend Market": ("2016-01-01", "2019-12-31"),
-        "Sideways Market": ("2015-01-01", "2016-06-30"),
-        "Downtrend Market": ("2007-10-01", "2009-03-31"),
+        "34-Year Full Cycle Comparison": ("1990-01-01", "2023-12-31"),
     }
     for name, (start, end) in scenarios.items():
         run_historical_scenario(TICKER, start, end, name)
