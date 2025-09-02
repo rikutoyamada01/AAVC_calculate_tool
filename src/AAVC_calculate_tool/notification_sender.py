@@ -1,7 +1,7 @@
 import os
-from datetime import datetime, timedelta, date # Added date
+from datetime import datetime, timedelta, date, UTC  # UTC を追加
 import sys
-from typing import List, Tuple, Any # Added List, Tuple, Any
+from typing import List, Tuple, Any
 
 # Add src directory to Python path to allow module imports
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -11,7 +11,7 @@ from AAVC_calculate_tool.data_loader import fetch_price_history_by_date, TickerN
 from AAVC_calculate_tool.config_loader import load_config
 
 # Load configuration
-config = load_config(os.path.abspath(os.path.join(os.path.dirname(__file__), '..\..\..\config.yaml')))
+config = load_config(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../config.yaml')))
 
 # --- Configuration ---
 TICKER = config.get("notification_sender", {}).get("ticker", "SPY")
@@ -20,29 +20,14 @@ AMOUNT = config.get("notification_sender", {}).get("amount", 40000)
 
 def _get_config_path() -> str:
     """Returns the absolute path to the config.yaml file."""
-    return os.path.abspath(os.path.join(os.path.dirname(__file__), '..\..\..\config.yaml'))
+    return os.path.abspath(os.path.join(os.path.dirname(__file__), '../../config.yaml'))
 
 def _fetch_and_prepare_data(ticker: str) -> Tuple[List[float], List[date], float, float]:
     """
     Fetches historical price data and prepares it for AAVC calculation.
-
-    Args:
-        ticker: The stock ticker symbol.
-
-    Returns:
-        A tuple containing:
-            - price_history (List[float]): List of historical prices.
-            - date_history (List[date]): List of corresponding dates.
-            - current_price (float): The latest price.
-            - ref_price (float): The reference price (oldest price in history).
-
-    Raises:
-        TickerNotFoundError: If the ticker is not found.
-        DataFetchError: If there's an error fetching data.
-        SystemExit: If no historical data is found.
     """
-    end_date = datetime.utcnow().strftime('%Y-%m-%d')
-    start_date = (datetime.utcnow() - timedelta(days=365 * 2)).strftime('%Y-%m-%d') # Last 2 years
+    end_date = (datetime.now(UTC) - timedelta(days=1)).strftime('%Y-%m-%d')  # yesterday
+    start_date = (datetime.now(UTC) - timedelta(days=365 * 2 + 1)).strftime('%Y-%m-%d')  # past 2 years 
 
     price_history, date_history = fetch_price_history_by_date(ticker, start_date, end_date)
     if not price_history:
@@ -66,18 +51,6 @@ def _calculate_investment_amount(
 ) -> Tuple[float, float]:
     """
     Calculates the AAVC investment amount.
-
-    Args:
-        current_price: The current price of the stock.
-        price_history: List of historical prices.
-        date_history: List of corresponding dates.
-        amount: The base investment amount.
-        ref_price: The reference price for calculation.
-
-    Returns:
-        A tuple containing:
-            - calculated_amount (float): The calculated investment amount.
-            - actual_reference_price (float): The actual reference price used in calculation.
     """
     aavc_params = {
         "base_amount": amount,
@@ -107,18 +80,8 @@ def _format_notification_message(
 ) -> str:
     """
     Formats the notification message.
-
-    Args:
-        ticker: The stock ticker symbol.
-        amount: The base investment amount.
-        current_price: The latest close price.
-        actual_reference_price: The actual reference price used in calculation.
-        calculated_amount: The calculated investment amount.
-
-    Returns:
-        A formatted string for the notification body.
     """
-    today_str = datetime.utcnow().strftime('%Y-%m-%d')
+    today_str = datetime.now(UTC).strftime('%Y-%m-%d')
 
     message = (
         f"Date: {today_str}\n"
@@ -152,12 +115,18 @@ def main():
             TICKER, AMOUNT, current_price, actual_reference_price, calculated_amount
         )
 
-        # Set the message as a GitHub Actions output variable
-        with open(os.environ['GITHUB_OUTPUT'], 'a') as fh:
-            print(f'notification_body<<EOF', file=fh)
-            print(message, file=fh)
-            print(f'EOF', file=fh)
-        print("Successfully prepared notification body.")
+        # Set the message as a GitHub Actions output variable (if available)
+        github_output = os.getenv("GITHUB_OUTPUT")
+        if github_output:
+            with open(github_output, 'a') as fh:
+                print(f'notification_body<<EOF', file=fh)
+                print(message, file=fh)
+                print(f'EOF', file=fh)
+            print("Successfully prepared notification body.")
+        else:
+            # Local debug fallback
+            print("GITHUB_OUTPUT not found, printing message instead:\n")
+            print(message)
 
     except TickerNotFoundError as e:
         print(f"Error: {e}")
