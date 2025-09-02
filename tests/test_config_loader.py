@@ -6,6 +6,7 @@ from src.AAVC_calculate_tool.config_loader import (
     ConfigParseError,
     load_config,
     prepare_calculation_jobs,
+    _load_and_validate_calculation_config, # Added this import
 )
 
 
@@ -97,7 +98,7 @@ def test_load_config_missing_default_settings(tmp_path,
     config_file = create_temp_config_file(tmp_path, "missing_default.yaml",
                                           missing_default_settings_content)
     with pytest.raises(ConfigParseError) as excinfo:
-        load_config(str(config_file))
+        _load_and_validate_calculation_config(str(config_file))
     assert "'default_settings' section is missing or malformed." in str(excinfo.value)
 
 
@@ -105,7 +106,7 @@ def test_load_config_missing_stocks(tmp_path, missing_stocks_content):
     config_file = create_temp_config_file(tmp_path, "missing_stocks.yaml",
                                           missing_stocks_content)
     with pytest.raises(ConfigParseError) as excinfo:
-        load_config(str(config_file))
+        _load_and_validate_calculation_config(str(config_file))
     assert "'stocks' section is missing or malformed." in str(excinfo.value)
 
 

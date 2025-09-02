@@ -35,6 +35,7 @@ MANIFEST
 
 # logs
 investment_log.csv
+logs/
 
 # Installer logs
 pip-log.txt

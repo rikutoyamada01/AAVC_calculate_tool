@@ -2,6 +2,22 @@ from typing import Any, Dict, List
 
 import yaml
 
+def load_config(file_path: str) -> Dict[str, Any]:
+    """Load configuration from a YAML file without specific validation."""
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            config_data = yaml.safe_load(f)
+    except FileNotFoundError as e:
+        raise ConfigNotFoundError(f"Config file not found at '{file_path}'.") from e
+    except yaml.YAMLError as e:
+        raise ConfigParseError(f"Error parsing YAML configuration file '{file_path}': {e}") from e
+    except Exception as e:
+        raise ConfigError(f"An unexpected error occurred while loading config file '{file_path}': {e}") from e
+
+    if not isinstance(config_data, dict):
+        raise ConfigParseError("Invalid config file format: Root must be a dictionary.")
+    return config_data
+
 
 class ConfigError(Exception):
     """Base exception for configuration errors."""
@@ -18,21 +34,11 @@ class ConfigParseError(ConfigError):
     pass
 
 
-def load_config(file_path: str) -> Dict[str, Any]:
-    """Load configuration from a YAML file."""
-    try:
-        with open(file_path, 'r', encoding='utf-8') as f:
-            config_data = yaml.safe_load(f)
-    except FileNotFoundError as e:
-        raise ConfigNotFoundError(f"Config file not found at '{file_path}'.") from e
-    except yaml.YAMLError as e:
-        raise ConfigParseError(f"Error parsing YAML configuration file '{file_path}': {e}") from e
-    except Exception as e:
-        raise ConfigError(f"An unexpected error occurred while loading config file '{file_path}': {e}") from e
+def _load_and_validate_calculation_config(file_path: str) -> Dict[str, Any]:
+    """Load and validate configuration for calculation jobs from a YAML file."""
+    config_data = load_config(file_path)
 
     # Basic validation (more detailed validation can be added later)
-    if not isinstance(config_data, dict):
-        raise ConfigParseError("Invalid config file format: Root must be a dictionary.")
     if "default_settings" not in config_data or \
             not isinstance(config_data["default_settings"], dict):
         raise ConfigParseError("Invalid config file format: 'default_settings' "

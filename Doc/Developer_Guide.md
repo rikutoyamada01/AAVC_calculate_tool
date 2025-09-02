@@ -12,9 +12,16 @@ AAVC_calculate_tool/
 │   └── AAVC_calculate_tool/
 │       ├── __init__.py          # Package initialization
 │       ├── __main__.py          # CLI entry point
+│       ├── algorithm_registry.py  # Manages different calculation algorithms
+│       ├── backtester.py        # Contains logic for backtesting investment strategies
 │       ├── calculator.py        # Core AAVC calculation logic
 │       ├── config_loader.py     # Configuration file parsing
 │       ├── data_loader.py       # Data fetching from Yahoo Finance
+│       ├── display.py           # Manages formatting and displaying output to the user
+│       ├── minus_five_percent_rule.py # Implements a specific investment rule
+│       ├── notification_sender.py # Sends monthly notifications
+│       ├── plotter.py           # Generates visual plots and charts from data
+│       ├── plugin_loader.py     # Handles loading external plugins or extensions
 │       └── recorder.py          # Investment logging functionality
 ├── tests/                       # Test suite
 ├── Doc/                         # Documentation
@@ -76,6 +83,26 @@ black src/
 - **`AAVCHighestPriceResetStrategy`**: Resets the reference price based on a new highest price seen, scaled by a reset factor.
 - **`DCAStrategy`**: Implements Dollar Cost Averaging.
 - **`BuyAndHoldStrategy`**: Implements a simple Buy & Hold strategy.
+- **`MinusFivePercentRuleStrategy`**: Implements a specific investment rule that buys a lump sum when the price drops by a certain percentage from the previous month's close.
+
+### Stateful vs. Stateless Strategies
+
+Investment strategies can be broadly categorized into stateless and stateful based on whether they maintain internal memory across calculations.
+
+#### Stateless Strategies
+
+A stateless strategy operates purely on the input provided for the current calculation. It does not retain any memory from previous calculations or require external persistence.
+
+*   **Example**: `AAVCHighestInHistoryStrategy` is an example of a stateless strategy. Its reference price is determined solely by the `price_history` provided in the current `calculate_investment` call.
+*   **Usage**: These are suitable for one-off calculations or scenarios where the full history is always provided and no cumulative memory is needed.
+
+#### Stateful Strategies
+
+A stateful strategy maintains internal memory (state) that evolves over time or across multiple calculation calls. This state influences subsequent calculations.
+
+*   **Example**: `AAVCHighestPriceResetStrategy` and `AAVCDynamicStrategy` are examples of stateful strategies. They track values like the highest price seen (`_highest_price_seen`) or an effective reference price (`_current_effective_ref_price`) that persist within the strategy instance.
+*   **Persistence Requirement**: When using stateful strategies in scenarios where the strategy instance is re-created for each calculation (e.g., in scheduled jobs like monthly notifications), their internal state must be explicitly persisted (e.g., to a file, database, or cache) and reloaded to ensure correct long-term behavior. Without persistence, their state will reset with each new instance, leading to incorrect results.
+*   **Internal State Management**: The `_strategy_context` dictionary within `BaseAAVCStrategy` is provided for subclasses to manage their internal state.
 
 **Algorithm Flow (General for `BaseAAVCStrategy` subclasses)**:
 1. Determine investment day based on frequency.
@@ -327,6 +354,7 @@ The project supports GitHub Actions for automated testing and deployment:
 - **Pull Request Checks**: Automated testing and linting
 - **Release Automation**: Automated version bumping and publishing
 - **Dependency Updates**: Automated security updates
+- **Monthly Investment Notification**: A GitHub Actions workflow (`.github/workflows/monthly_notification.yml`) automatically calculates the investment amount for a pre-configured stock and sends a summary report to a specified email address once a month. This feature uses `notification_sender.py` to prepare the notification content.
 
 ## Contributing
 

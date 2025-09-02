@@ -26,3 +26,7 @@ stocks:
   - ticker: "AMZN" # アマゾン
     base_amount: 200
     reference_price: 230.0
+
+notification_sender:
+  ticker: SPY
+  amount: 40000

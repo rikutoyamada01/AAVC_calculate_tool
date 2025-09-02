@@ -40,14 +40,14 @@ python -m AAVC_calculate_tool calc --help
 
 ## How to Run Tests
 
-The project uses `pytest` for testing.
+The project uses `python -m pytest` for testing.
 
 ### Run All Tests
 
 To execute the entire test suite:
 
 ```bash
-pytest
+python -m pytest
 ```
 
 ### Run a Specific Test File
@@ -55,7 +55,7 @@ pytest
 To run tests from a specific file:
 
 ```bash
-pytest tests/test_calculator.py
+python -m pytest tests/test_calculator.py
 ```
 
 ## Code Generation and Modification Rules

@@ -14,15 +14,16 @@ This index provides an overview of all available documentation to help you find 
 - **[CLI Specification](01_CLI_Specification.md)** - Command-line interface overview
 - **[Data Acquisition](02_Data_Acquisition.md)** - Data fetching and validation
 - **[Configuration and Logging](03_Configuration_and_Logging.md)** - Settings and logging
-- **[Backtesting](04_Backtesting.md)** - Strategy testing (planned feature)
-- **[Backtest Comparison](05_Backtest_Comparison.md)** - Performance analysis (planned feature)
+- **[Backtesting](04_Backtesting.md)** - Strategy testing
+- **[Backtest Comparison](05_Backtest_Comparison.md)** - Performance analysis
 
 ### 🔧 Technical Details
 - **[CLI Detailed Design](01_CLI_Detailed_Design.md)** - CLI implementation details
 - **[Data Acquisition Detailed Design](02_Data_Acquisition_Detailed_Design.md)** - Data handling architecture
 - **[Configuration and Logging Detailed Design](03_Configuration_and_Logging_Detailed_Design.md)** - Configuration system design
-- **[Backtesting Detailed Design](04_Backtesting_Detailed_Design.md)** - Backtesting implementation (planned)
-- **[Backtest Comparison Detailed Design](05_Backtest_Comparison_Detailed_Design.md)** - Comparison system design (planned)
+- **[Backtesting Detailed Design](04_Backtesting_Detailed_Design.md)** - Backtesting implementation
+- **[Backtest Comparison Detailed Design](05_Backtest_Comparison_Detailed_Design.md)** - Comparison system design
+- **[Monthly Notification Feature Detailed Design](07_Monthly_Notification_Feature_Detailed_Design.md)** - Monthly Notification Feature Detailed Design
 
 ### 👨‍💻 Developer Resources
 - **[Developer Guide](Developer_Guide.md)** - Comprehensive development information

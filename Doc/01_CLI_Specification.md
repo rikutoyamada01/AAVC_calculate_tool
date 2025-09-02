@@ -31,7 +31,7 @@ python -m src.AAVC_calculate_tool calc --ticker <TICKER_SYMBOL> --amount <BASE_A
 - `--ref-price-reset-factor`: オプション。リセット時の新しい基準価格の係数（デフォルト: 0.8）。
 - `--reset-factor`: オプション。最高値更新時の基準価格リセット係数（デフォルト: 0.85）。
 - `--log-file`: オプション。投資ログを記録するCSVファイルのパス（デフォルト: `investment_log.csv`）。
-- `--algorithms`: オプション。使用するアルゴリズムのカンマ区切りリスト（例: `aavc_static,aavc_highest_reset,dca`）。指定しない場合、デフォルトのアルゴリズム（AAVC）が使用されます。
+- `--algorithms`: オプション。使用するアルゴリズムのカンマ区切りリスト（例: `aavc_static,aavc_highest_reset,dca,minus_five_percent_rule`）。指定しない場合、デフォルトのアルゴリズム（AAVC）が使用されます。
 - `--algorithm-params`: オプション。アルゴリズム固有のパラメータをJSON形式で指定します（例: `'aavc_highest_reset:reset_factor=0.9;aavc_static:ref_price=100'`）。
 - `--compare-mode`: オプション。比較モードを有効にし、各アルゴリズムの結果を並べて表示します。
 
@@ -62,7 +62,7 @@ python -m src.AAVC_calculate_tool backtest \
 - `--start-date`: 必須。バックテストの開始日（YYYY-MM-DD形式）。
 - `--end-date`: 必須。バックテストの終了日（YYYY-MM-DD形式）。
 - `--amount`, `-a`: 必須。基準投資額。
-- `--algorithms`: オプション。比較するアルゴリズムのカンマ区切りリスト（例: `aavc,dca,buy_and_hold`）。指定しない場合、登録されている全てのアルゴリズム（AAVC, DCA, Buy & Hold）がデフォルトで実行されます。
+- `--algorithms`: オプション。比較するアルゴリズムのカンマ区切りリスト（例: `aavc,dca,buy_and_hold,minus_five_percent_rule`）。指定しない場合、登録されている全てのアルゴリズム（AAVC, DCA, Buy & Hold）がデフォルトで実行されます。
 - `--algorithm-params`: オプション。アルゴリズム固有のパラメータを指定します。形式は `algo_name:param1=val1;param2=val2,algo_name2:paramA=valA` のように、アルゴリズム名とパラメータをコロンで区切り、複数のパラメータはセミコロンで区切ります。
 - `--compare-mode`: オプション。比較結果の表示モード（`simple` または `detailed`）。デフォルトは `simple` です。
 - `--plot`: オプション。比較チャートを生成し、ファイルに保存します。

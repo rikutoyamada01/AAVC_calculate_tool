@@ -1,0 +1,49 @@
+ リファクタリング計画の最初のステップである、Doc/Developer_Guide
+  .md と calculator.py のdocstringに戦略の状態保持性に関するドキ
+  ュメントを追加する作業が完了しました。
+
+  次に、リファクタリング計画の2番目のステップである、設定の外部化
+  に移ります。
+
+  目標: TICKER と AMOUNT を notification_sender.py から
+  config.yaml に移動し、notification_sender.py
+  を更新してそれらをロードするようにします。
+
+  詳細設計:
+
+   1. `config.yaml` の修正:
+       * notification_sender
+         設定用の新しいセクションを追加します。
+       * このセクションに ticker と amount を含めます。
+       * 例:
+
+   1         # config.yaml
+   2         notification_sender:
+   3           ticker: SPY
+   4           amount: 40000
+
+   2. `src/AAVC_calculate_tool/notification_sender.py` の修正:        
+       * config_loader をインポートします。
+       * config_loader.load_config()
+         を使用して設定をロードします。
+       * ロードされた設定から ticker と amount にアクセスします。     
+       * ハードコードされた TICKER と AMOUNT 変数を削除します。       
+
+   3. `src/AAVC_calculate_tool/config_loader.py` の修正:
+       * config_loader.load_config()
+         が任意のセクションをロードできることを確認します（一般的
+         な設定ローダーなので、できるはずです）。
+       * （任意ですが良い習慣）config.yaml に notification_sender
+          のデフォルト値が存在しない場合、config_loader
+         に追加します。
+
+  実行ステップ:
+
+   1. `config.yaml` を読み込む: 現在の内容を取得するため。
+   2. `src/AAVC_calculate_tool/notification_sender.py` を読み込む:
+       現在の内容を取得するため。
+   3. `src/AAVC_calculate_tool/config_loader.py` を読み込む:
+      そのロードメカニズムを理解するため。
+   4. `replace` または `write_file` を使用して変更を適用する。
+
+  まず、config.yaml を読み込みます

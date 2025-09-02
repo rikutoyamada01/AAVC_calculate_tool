@@ -9,7 +9,10 @@ from AAVC_calculate_tool.algorithm_registry import AlgorithmMetadata, BaseAlgori
 # --- AAVC Base Strategy ---
 
 class BaseAAVCStrategy(BaseAlgorithm):
-    """AAVC戦略の共通ロジックを定義する抽象基底クラス"""
+    """AAVC戦略の共通ロジックを定義する抽象基底クラス
+
+    ステートフルな戦略は、内部状態を管理するために `_strategy_context` を使用できます。
+    """
 
     def __init__(self):
         super().__init__()
@@ -93,7 +96,10 @@ class BaseAAVCStrategy(BaseAlgorithm):
 # --- AAVC Strategy Implementations ---
 
 class AAVCDynamicStrategy(BaseAAVCStrategy):
-    """バージョン2: 価格上昇時に基準価格を動的にリセットする戦略"""
+    """バージョン2: 価格上昇時に基準価格を動的にリセットする戦略 (ステートフル)
+
+    この戦略は、`_current_effective_ref_price` を内部状態として維持します。
+    """
 
     def get_metadata(self) -> AlgorithmMetadata:
         return AlgorithmMetadata(
@@ -197,7 +203,10 @@ class AAVCMovingAverageStrategy(BaseAAVCStrategy):
 
 
 class AAVCHighestPriceResetStrategy(BaseAAVCStrategy):
-    """最高値更新時に基準価格をリセットする戦略"""
+    """最高値更新時に基準価格をリセットする戦略 (ステートフル)
+
+    この戦略は、`_highest_price_seen` と `_current_effective_ref_price` を内部状態として維持します。
+    """
 
     def get_metadata(self) -> AlgorithmMetadata:
         return AlgorithmMetadata(
@@ -245,7 +254,10 @@ class AAVCHighestPriceResetStrategy(BaseAAVCStrategy):
 
 
 class AAVCHighestInHistoryStrategy(BaseAAVCStrategy):
-    """履歴内の最高値を基準価格とする戦略（永続性なし）"""
+    """履歴内の最高値を基準価格とする戦略 (ステートレス)
+
+    この戦略は、現在の `price_history` のみに基づいて基準価格を計算し、内部状態を維持しません。
+    """
 
     def get_metadata(self) -> AlgorithmMetadata:
         return AlgorithmMetadata(
@@ -275,7 +287,6 @@ class AAVCHighestInHistoryStrategy(BaseAAVCStrategy):
             return 0.0
 
         highest_price_in_history = max(price_history)
-        print(f"DEBUG: Highest price in history (inside strategy): {highest_price_in_history}")
         
         # The reference price is simply the highest price in the current history * reset_factor
         return highest_price_in_history * reset_factor

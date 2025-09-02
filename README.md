@@ -15,8 +15,10 @@ A tool to calculate daily investment amounts based on the **Asymmetric Volatilit
 - **Algorithm Comparison Mode**: Allows comparison of results from multiple algorithms side-by-side.
 - **Automatic Data Acquisition**: Fetches the latest stock/fund data automatically using yfinance.
 - **Configuration Management**: Manages your portfolio and parameters via a simple YAML configuration file.
+- **Organized Structure**: Utility scripts are located in the `scripts/` directory, and generated reports are saved in the `reports/` directory.
 - **Monthly Email Notifications**: Automatically calculates the investment amount for a pre-configured stock and sends a summary report to your email once a month. Requires setup.
-- **Backtesting (Planned)**: Simulate and evaluate the strategy's performance on historical data.
+- **Backtesting**: Simulate and evaluate the strategy's performance on historical data.
+- **Minus Five Percent Rule Strategy**: Implements a specific investment strategy that buys a lump sum when the price drops by a certain percentage from the previous month's close.
 
 ## Installation
 
@@ -77,7 +79,7 @@ python -m AAVC_calculate_tool [subcommand] [options]
 
 Available subcommands:
 - `calc`: Calculate investment amounts
-- `backtest`: Run backtesting (planned feature)
+- `backtest`: Run backtesting
 
 ### Run Backtesting
 
@@ -339,7 +341,7 @@ To use this feature, you must configure several "Secrets" in your GitHub reposit
 
 ### Customization
 
--   **Ticker and Amount**: The stock ticker and base investment amount can be changed by editing the configuration variables at the top of the `src/AAVC_calculate_tool/notification_sender.py` file. The defaults are `QQQ` and `$10,000`.
+-   **Ticker and Amount**: The stock ticker and base investment amount for monthly notifications are configured in the `notification_sender` section of `config.yaml`. The defaults are `SPY` and `JPY 40,000`.
 -   **Schedule**: The schedule is defined in `.github/workflows/monthly_notification.yml` using a cron expression. The default is the 1st of every month.
 
 ### Manual Testing
