@@ -275,6 +275,7 @@ class AAVCHighestInHistoryStrategy(BaseAAVCStrategy):
             return 0.0
 
         highest_price_in_history = max(price_history)
+        print(f"DEBUG: Highest price in history (inside strategy): {highest_price_in_history}")
         
         # The reference price is simply the highest price in the current history * reset_factor
         return highest_price_in_history * reset_factor

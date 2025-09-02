@@ -26,6 +26,12 @@ def main():
             print(f"Error: No historical data found for {TICKER}.")
             sys.exit(1)
 
+        # Debugging prints for price_history
+        print(f"DEBUG: price_history length: {len(price_history)}")
+        print(f"DEBUG: price_history first 5: {price_history[:5]}")
+        print(f"DEBUG: price_history last 5: {price_history[-5:]}")
+        print(f"DEBUG: max(price_history): {max(price_history)}")
+
         # 2. Prepare parameters for calculation
         current_price = price_history[-1]
         ref_price = price_history[0]  # Use the oldest price as the reference
@@ -51,6 +57,7 @@ def main():
 
         # Get the actual reference price used in calculation
         actual_reference_price = strategy._strategy_context.get("last_calculated_reference_price", ref_price)
+        print(f"DEBUG: Actual reference price (before message): {actual_reference_price}")
 
         # 4. Create the notification message
         today_str = datetime.utcnow().strftime('%Y-%m-%d')
