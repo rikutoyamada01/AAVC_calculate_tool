@@ -105,8 +105,8 @@ graph TD
     # ---
     # 設定項目
     # ---
-    TICKER = "QQQ"       # 計算対象のティッカー
-    AMOUNT = 10000       # 基準投資額
+    TICKER = "SPY"       # 計算対象のティッカー
+    AMOUNT = 40000       # 基準投資額
     # ---------------
 
     def main():
@@ -120,7 +120,7 @@ graph TD
         
         # 結果の取得
         # resultオブジェクトの構造を仮定。要確認・調整。
-        # 例：result = {"ticker": "QQQ", "aavc_purchase_price": 123.45, ...}
+        # 例：result = {"ticker": "SPY", "aavc_purchase_price": 123.45, ...}
         # 実際のresultオブジェクトのキーに合わせて修正が必要です。
         purchase_price = result.get("aavc_purchase_price", "N/A")
         last_close = result.get("last_close_price", "N/A")

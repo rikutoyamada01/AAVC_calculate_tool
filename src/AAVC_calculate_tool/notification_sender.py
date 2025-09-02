@@ -5,7 +5,7 @@ import sys
 # Add src directory to Python path to allow module imports
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from AAVC_calculate_tool.calculator import AAVCStaticStrategy
+from AAVC_calculate_tool.calculator import AAVCHighestPriceResetStrategy
 from AAVC_calculate_tool.data_loader import fetch_price_history, TickerNotFoundError, DataFetchError
 
 # --- Configuration ---
@@ -39,7 +39,8 @@ def main():
         }
 
         # 3. Instantiate strategy and calculate investment amount
-        strategy = AAVCStaticStrategy()
+        # You can customize the strategy further if needed
+        strategy = AAVCHighestPriceResetStrategy()
         calculated_amount = strategy.calculate_investment(
             current_price=current_price,
             price_history=price_history,
@@ -63,7 +64,10 @@ def main():
 
         # 5. Set the message as a GitHub Actions output variable
         # This special format is recognized by GitHub Actions
-        print(f"::set-output name=notification_body::{message}")
+        with open(os.environ['GITHUB_OUTPUT'], 'a') as fh:
+            print(f'notification_body<<EOF', file=fh)
+            print(message, file=fh)
+            print(f'EOF', file=fh)
         print("Successfully prepared notification body.")
 
     except TickerNotFoundError as e:
