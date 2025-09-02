@@ -59,6 +59,7 @@ class BaseAAVCStrategy(BaseAlgorithm):
         reference_price = self._calculate_reference_price(
             current_price, price_history, parameters
         )
+        self._strategy_context["last_calculated_reference_price"] = reference_price
 
         # --- 3. ボラティリティの計算 ---
         if len(price_history) < 2:

@@ -40,6 +40,7 @@ def main():
 
         # 3. Instantiate strategy and calculate investment amount
         # You can customize the strategy further if needed
+        # 3. Instantiate strategy and calculate investment amount
         strategy = AAVCHighestPriceResetStrategy()
         calculated_amount = strategy.calculate_investment(
             current_price=current_price,
@@ -47,6 +48,9 @@ def main():
             date_history=[],  # Not strictly needed for this calculation
             parameters=aavc_params
         )
+
+        # Get the actual reference price used in calculation
+        actual_reference_price = strategy._strategy_context.get("last_calculated_reference_price", ref_price)
 
         # 4. Create the notification message
         today_str = datetime.utcnow().strftime('%Y-%m-%d')
@@ -58,7 +62,7 @@ def main():
             f"Base Amount: ${AMOUNT:,.2f}\n"
             f"--------------------\n"
             f"Latest Close Price: ${current_price:,.2f}\n"
-            f"Reference Price (Oldest): ${ref_price:,.2f}\n"
+            f"Actual Reference Price: ${actual_reference_price:,.2f}\n"
             f"Calculated Investment Amount: ${calculated_amount:,.2f}"
         )
 
